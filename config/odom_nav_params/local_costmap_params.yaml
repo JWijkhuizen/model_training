@@ -1,0 +1,12 @@
+local_costmap:
+  global_frame: map
+  robot_base_frame: base_link
+  update_frequency: 20.0
+  publish_frequency: 10.0
+  # static_map: false
+  rolling_window: true # true means that the costmap will remain centered around the robot as the robot moves through the world
+  width: 5.0
+  height: 5.0
+  resolution: 0.01
+
+# More parameters: see costmap_2d documentation online

@@ -1,0 +1,24 @@
+<launch>
+
+<!-- SLAM -->
+  <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping">
+    <remap from="scan" to="front/scan"/>
+    <param name="map_update_interval" value="1"/>
+  </node>
+
+<!-- Move base -->
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+    <param name="base_local_planner" value="teb_local_planner/TebLocalPlannerROS" />
+    <remap from="odom" to="boxer_velocity_controller/odom"/>
+
+    <rosparam file="$(find simulation_tests)/config/costmap_common_params.yaml" command="load" ns="global_costmap"/>
+    <rosparam file="$(find simulation_tests)/config/costmap_common_params.yaml" command="load" ns="local_costmap"/>
+
+    <rosparam file="$(find simulation_tests)/config/odom_nav_params/local_costmap_params.yaml" command="load"/>
+    <rosparam file="$(find simulation_tests)/config/odom_nav_params/global_costmap_params.yaml" command="load"/>
+
+    <rosparam file="$(find simulation_tests)/config/teb_local_planner_params1.yaml" command="load"/>
+    <rosparam file="$(find simulation_tests)/config/move_base_params.yaml" command="load"/>
+  </node>
+  
+</launch>

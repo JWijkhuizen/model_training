@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <node name="spawn_sdf" pkg="gazebo_ros" type="spawn_model" args="-file $(find ahxl_gazebo)/gazebo_models/unit_cylinder/model.sdf -sdf -model model2 -z 0.5 -x 1 -y 1 " />
+</launch>

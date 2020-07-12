@@ -1,0 +1,7 @@
+global_costmap:
+  global_frame: map
+  robot_base_frame: base_link
+  update_frequency: 5.0
+  publish_frequency: 5.0
+  # static_map: true # Determines whether or not the costmap should initialise itself based on a map served by the map_server
+#  rolling_window: false

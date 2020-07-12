@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="lidar_rays" default="720"/>
+  <arg name="robot_namespace" default="/"/>
+  <arg name="x" default="0.0"/>
+  <arg name="y" default="0.0"/>
+  <arg name="yaw" default="0.0"/>
+
+  
+
+
+  <!-- Launch all nodes within the specified namespace. Prevents node namespace collisions in the multi-robot case -->
+  <group ns="$(arg robot_namespace)">
+
+    <!-- Constants for gazebo_ros_control's internal PID loop that
+     drives the simulated position and velocity controllers. -->
+    <rosparam>
+      gazebo_ros_control:
+        pid_gains:
+          left_wheel_joint: { p: 1.0, i: 0.0, d: 0.0 }
+          right_wheel_joint: { p: 1.0, i: 0.0, d: 0.0 }
+          lift_joint: { p: 100000.0, i: 1000.0, i_clamp: 1000, d: 1000.0 }
+    </rosparam>
+
+    <rosparam command="load" file="$(find boxer_control)/config/control.yaml" />
+
+    <include file="$(find boxer_control)/launch/control.launch"/>
+    <include file="$(find boxer_control)/launch/teleop.launch"/>
+    
+
+  </group> <!-- End of namespace -->
+
+  
+
+</launch>

@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Configurable launch args -->
+  <arg name="use_sim_time" default="true" />
+  <arg name="gui" default="true"/>
+  <arg name="headless" default="false" />
+  <arg name="lidar_rays" default="720"/>
+  <arg name="real_time_update_rate" default="100.0" doc="Specify simulation frequency (Hz)"/>
+  <arg name="robot_namespace" default="/"/>
+
+  <!-- Robot Simulation 
+  <include file="$(find jackal_gazebo)/launch/jackal_world.launch">
+    <arg name="gui" value="$(arg gui)" />
+    <arg name="use_sim_time" value="$(arg use_sim_time)" />
+    <arg name="headless" value="$(arg headless)" />
+    <arg name="world_name" value="$(find ahxl_gazebo)/worlds/AHXLDelft_UL3_simple.world"/>
+    <arg name="x" value="3.0"/>
+    <arg name="y" value="-14.0"/>
+  </include>-->
+  <include file="$(find jackal_gazebo)/launch/jackal_world.launch">
+    <arg name="gui" value="$(arg gui)" />
+    <arg name="use_sim_time" value="$(arg use_sim_time)" />
+    <arg name="headless" value="$(arg headless)" />
+    <arg name="world_name" value="$(find ahxl_gazebo)/worlds/simple.world"/>
+    <arg name="x" value="0.0"/>
+    <arg name="y" value="0.0"/>
+  </include>
+
+
+  <!-- Start Rviz -->
+  <include file="$(find simulation_tests)/launch/view_robot.launch" >
+  </include>
+
+  <!-- Start move_base and localization -->
+  <include file="$(find simulation_tests)/launch/navigation_default.launch" >
+  </include>
+
+
+</launch>

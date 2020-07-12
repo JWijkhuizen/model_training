@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Configurable launch args -->
+  <arg name="use_sim_time" default="true" />
+  <arg name="gui" default="true"/>
+  <arg name="real_time_update_rate" default="100.0" doc="Specify simulation frequency (Hz)"/>
+  <arg name="world" default="simple.world"/>
+
+  <!-- Launch Gazebo with the specified world -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="debug" value="0" />
+    <arg name="gui" value="$(arg gui)" />
+    <arg name="use_sim_time" value="$(arg use_sim_time)" />
+    <arg name="paused" value="false"/>
+    <arg name="world_name" value="$(find simulation_tests)/worlds/$(arg world)"/>
+  </include>
+
+  <!-- Spawn a single BOXER robot -->
+  <include file="$(find simulation_tests)/launch/spawn_boxer.launch" >
+    <arg name="x" value="0.0"/>
+  	<arg name="y" value="0.0"/>
+  </include>
+
+</launch>

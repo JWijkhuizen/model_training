@@ -1,0 +1,30 @@
+TebLocalPlannerROS:
+  # Robot configuration parameters
+  max_vel_x: 0.9
+  max_vel_backwards: 0.9
+  max_vel_y: 0
+  max_vel_theta: 1
+
+  acc_lim_theta: 1
+  acc_lim_x: 1
+  acc_lim_y: 0
+
+  # footprint_model:
+  #   type: polygon
+  #   vertices: [[-0.220, -0.275], [-0.220, 0.275], [0.525, 0.275], [0.525, -0.275]]
+  footprint_model:
+    type: "line"
+    line_start: [-0.1, 0]
+    line_end: [0.4, 0]
+  
+  # Trajectory Configuration Parameters
+  # max_global_plan_lookahead_dist: 3 #3
+
+  # Obstacle Parameters
+  min_obstacle_dist: 0.3
+  inflation_dist: 0
+  # obstacle_poses_affected: 10 #30
+
+  # Parallel Planning in distinctive Topologies
+  enable_homotopy_class_planning: false
+  max_number_classes: 2

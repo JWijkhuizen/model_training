@@ -1,0 +1,40 @@
+local_costmap:
+  global_frame: map
+  robot_base_frame: base_link
+  update_frequency: 10.0
+  publish_frequency: 5.0
+  static_map: false
+  rolling_window: true # true means that the costmap will remain centered around the robot as the robot moves through the world
+  width: 7
+  height: 7
+  resolution: 0.05
+
+# More parameters: see costmap_2d documentation online
+  map_type: costmap
+  origin_z: 0.0
+  z_resolution: 1
+  z_voxels: 2
+
+  publish_voxel_map: false
+  transform_tolerance: 0.2
+  meter_scoring: true
+
+  obstacle_range: 2 # maximum range sensor reading that will result in an obstacle being put in the costmap
+  raytrace_range: 3.0 # range to which we will raytrace freespace
+  footprint: [[-0.220, -0.275], [-0.220, 0.275], [0.525, 0.275], [0.525, -0.275]]
+
+
+  plugins:
+    - {name: static_layer, type: "costmap_2d::StaticLayer"}
+    - {name: obstacles_layer, type: "costmap_2d::ObstacleLayer"}
+    - {name: inflater_layer, type: "costmap_2d::InflationLayer"}
+
+  # Use laser to add and clear obstacles
+  obstacles_layer:
+    observation_sources: laser_scan_sensor
+    laser_scan_sensor: {sensor_frame: front_laser, data_type: LaserScan, topic: front/scan, marking: true, clearing: true, min_obstacle_height: -2.0, max_obstacle_height: 2.0, obstacle_range: 2.5, raytrace_range: 3.0, inf_is_invalid: true}
+    # observation_sources: velodyne
+    # velodyne: {sensor_frame: velodyne, data_type: PointCloud2, topic: velodyne_points, marking: true, clearing: true, min_obstacle_height: -10, obstacle_range: 25, raytrace_range: 25}
+
+  inflater_layer:
+    inflation_radius: 0.20 # maximum distance from obstacle at which a cost should be incurred

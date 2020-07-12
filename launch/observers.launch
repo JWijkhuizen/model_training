@@ -1,0 +1,19 @@
+<launch>
+
+<!-- Quality of Service Observer -->
+  <node pkg="simulation_tests" type="observer_performance.py" name="observer_performance"/>
+  <node pkg="simulation_tests" type="observer_safety.py" name="observer_safety"/>
+
+<!-- Environment metrics Observers -->
+  <node pkg="simulation_tests" type="observer_density.py" name="observer_density" />
+  <node pkg="simulation_tests" type="observer_narrowness.py" name="observer_narrowness" />
+
+<!-- Plot the data  -->
+<!--   <node pkg="rqt_plot" type="rqt_plot" name="SafetyPlot" args="/QoS/Safety1 /QoS/Safety2 /QoS/Safety3" />
+  <node pkg="rqt_plot" type="rqt_plot" name="PerformancePlot" args="/QoS/Performance1" />
+  <node pkg="rqt_plot" type="rqt_plot" name="NarrownessPlot" args="/metrics/narrowness" />
+  <node pkg="rqt_plot" type="rqt_plot" name="DensityPlot" args="/metrics/density" /> -->
+ 
+
+  
+</launch>

@@ -1,0 +1,27 @@
+<launch>
+
+<!-- map server -->
+    <node pkg="map_server" type="map_server" name="map_server" args="~/thismap.yaml"/>
+
+  <node pkg="amcl" type="amcl" name="amcl">
+      <remap from="scan" to="front/scan"/>
+      <param name="use_map_topic" value="true"/>
+      <param name="update_min_d" value="0.1"/>
+      <param name="update_min_a" value="0.3"/>
+      <param name="first_map_only" value="true" />
+
+      <param name="recovery_alpha_slow" value="0.00" />
+      <param name="recovery_alpha_fast" value="0.0" />
+      <param name="odom_model_type" value="diff-corrected" />
+    </node>
+
+<!-- Move base -->
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+    <rosparam file="$(find simulation_tests)/config/local_costmap_params.yaml" command="load"/>
+    <rosparam file="$(find simulation_tests)/config/global_costmap_params.yaml" command="load"/>
+
+    <rosparam file="$(find simulation_tests)/config/base_local_planner_params.yaml" command="load"/>
+    <rosparam file="$(find simulation_tests)/config/move_base_params.yaml" command="load"/>
+  </node>
+  
+</launch>

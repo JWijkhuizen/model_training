@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Configurable launch args -->
+  <arg name="use_sim_time" default="true" />
+  <arg name="gui" default="true"/>
+  <arg name="headless" default="false" />
+  <arg name="lidar_rays" default="720"/>
+  <arg name="real_time_update_rate" default="100.0" doc="Specify simulation frequency (Hz)"/>
+  <arg name="robot_namespace" default="/"/>
+
+
+  <!-- Spawn a single BOXER robot -->
+  <include file="$(find ahsupermarket_simulation)/launch/spawn_boxer.launch" >
+    <arg name="lidar_rays" value="$(arg lidar_rays)"/>
+    <arg name="robot_namespace" value="$(arg robot_namespace)"/>
+    <arg name="x" value="3.0"/>
+  	<arg name="y" value="-14.0"/>
+  </include>
+
+<!--
+<include file="$(find ahsupermarket_simulation)/launch/view_navigation.launch" >
+  </include>
+
+  <include file="$(find ahsupermarket_simulation)/launch/navigation.launch" >
+  </include>
+-->
+
+</launch>

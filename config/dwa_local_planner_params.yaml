@@ -1,0 +1,32 @@
+DWAPlannerROS: 
+  # Robot configuration parameters
+  max_vel_trans: 1
+  min_vel_trans: 0
+  max_vel_x: 1
+  min_vel_x: -1
+  max_vel_y: 0
+  min_vel_y: 0
+  max_vel_theta: 2
+  min_vel_theta: -2
+
+  acc_lim_th: 2
+  acc_lim_trans: 2
+  acc_lim_x: 2
+  acc_lim_y: 0
+
+
+  # Goal tolerance parameters
+  xy_goal_tolerance: 1
+
+  # Forward simulation parameters
+  # sim_time: 1
+  # vx_samples: 10
+  # vy_samples: 0
+  # vth_samples: 20
+  #Trajectory scoring parameters
+  path_distance_bias: 8 #32
+  goal_distance_bias: 24 #24
+
+  # Oscillation prevention parameters
+
+  # Global plan parameters  
