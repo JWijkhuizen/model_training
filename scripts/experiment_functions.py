@@ -96,7 +96,7 @@ def move_obstacles(w,obs_dense,d_min,sx,xstart,nstart,idy):
 			for j in range(len(obs_x)):
 				d.append(math.sqrt(pow(obs_x[j]-xi,2)+pow(obs_y[j]-yi,2)))
 			s = check_space(w,yi)
-			if min(d) > d_min and s > 0.9:
+			if min(d) > d_min and s > 0.85:
 				pos_check = False
 			else:
 				tries += 1
@@ -189,24 +189,24 @@ def reset_robot(x,y,yaw):
 	rospy.wait_for_service('/gazebo/set_model_state')
 	resp = set_state( model_pose )
 
-# def compute_goal(x,y,yaw):
-# 	goal = move.MoveBaseGoal()
-# 	goal.target_pose.header.frame_id = "map"
-# 	goal.target_pose.pose.position.x = x
-# 	goal.target_pose.pose.position.y = y
-# 	goal.target_pose.pose.orientation = Quaternion(*quaternion_from_euler(0,0,yaw))
+def compute_goal(x,y,yaw):
+	goal = move.MoveBaseGoal()
+	goal.target_pose.header.frame_id = "map"
+	goal.target_pose.pose.position.x = x
+	goal.target_pose.pose.position.y = y
+	goal.target_pose.pose.orientation = Quaternion(*quaternion_from_euler(0,0,yaw))
 
-# 	return goal
+	return goal
 
-def compute_goal(x,y,yaw,listener):
-	try:
-		trans = listener.lookup_transform('map', 'base_link', rospy.Time(0))
-	except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-		print ("Could not get TF")
-		return False
-	# goal.target_pose.pose.orientation += Quaternion(*quaternion_from_euler(0,0,yaw))
-	euler = euler_from_quaternion([trans.transform.rotation.x,trans.transform.rotation.y,trans.transform.rotation.z,trans.transform.rotation.w])
-	yaw0 = euler[2]
+# def compute_goal(x,y,yaw,listener):
+# 	try:
+# 		trans = listener.lookup_transform('map', 'base_link', rospy.Time(0))
+# 	except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+# 		print ("Could not get TF")
+# 		return False
+# 	# goal.target_pose.pose.orientation += Quaternion(*quaternion_from_euler(0,0,yaw))
+# 	euler = euler_from_quaternion([trans.transform.rotation.x,trans.transform.rotation.y,trans.transform.rotation.z,trans.transform.rotation.w])
+# 	yaw0 = euler[2]
 
 	print(trans.transform)
 	goal = move.MoveBaseGoal()
