@@ -40,7 +40,7 @@ n = len(files)
 X = dict()
 y = dict()
 
-
+# Import data
 for idx in range(n):
 	df1 = import_bag(files[idx], bag_topics)
 	d_density1 = pd.Series(np.gradient(df1['density1'].values), df1.index, name='d_density1')
