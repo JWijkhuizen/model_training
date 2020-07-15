@@ -13,6 +13,7 @@ import numpy as np
 from mpl_toolkits import mplot3d
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Ridge
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
@@ -26,7 +27,8 @@ def import_bag(file, bag_topics, print_head=False):
 	df = df.groupby(level=0).mean()
 	# df = df.resample('1ms').mean()
 	df = df.resample('1ms').mean()
-	df = df.interpolate(method='linear')
+	df = df.interpolate(method='linear',limit_direction='both')
+	df = df.rolling(800, min_periods=1).mean()
 
 	if print_head:
 		print(df.head())
@@ -63,7 +65,7 @@ for idx in range(n):
 	d_density3 = pd.Series(np.gradient(df1['density3'].values), df1.index, name='d_density3')
 	d_narrowness1 = pd.Series(np.gradient(df1['narrowness1'].values), df1.index, name='d_narrowness1')
 	data = pd.concat([df1['safety1'],df1['safety2'],df1['performance1'], df1['density1'], df1['narrowness1'], d_narrowness1/0.001, d_density1/0.001], axis=1)
-	data = data.dropna()
+	# data = data.dropna()
 	# X[idx] = data[['density1','narrowness1','d_density1','d_narrowness1']].values
 	X[idx] = data[['density1','narrowness1','d_density1','d_narrowness1']].values
 	y2[idx] = data['safety2'].values
@@ -78,14 +80,17 @@ for idx in range(n):
 m1 = dict()
 m2 = dict()
 m3 = dict()
+m4 = dict()
 
 for idx in range(n_t):
 	print("Fitting with Linear Regression method")
 	m1[idx] = LinearRegression().fit(X[idx], y2[idx])
 	# print("Fitting with Ridge method")
 	# m2[idx] = Ridge().fit(X[idx],y[idx])
-	print("Fitting with SVR method")
-	m3[idx] = SVR().fit(X[idx],y2[idx])
+	# print("Fitting with SVR method")
+	# m3[idx] = SVR().fit(X[idx],y2[idx])
+	print("Fitting with random forest thing")
+	m4[idx] = RandomForestRegressor(n_estimators=10).fit(X[idx], y2[idx])
 
 print("Plotting")
 # ax.set_xticks(labels)
@@ -97,19 +102,33 @@ for idv in [3, 5]:
 	# for idx in range(n_t):
 	# ax.plot(m1[0].predict(X[idv]), label='Linear model DWA')
 	# ax.plot(m1[1].predict(X[idv]), label='Linear model TEB')
-	ax.plot(lowess(m3[0].predict(X[idv]),index[idv],frac=0.01), label='SVR model DWA')
-	ax.plot(lowess(m3[1].predict(X[idv]),index[idv],frac=0.01), label='SVR model TEB')
+	# ax.plot(m3[0].predict(X[idv]), label='SVR model DWA')
+	# ax.plot(m3[1].predict(X[idv]), label='SVR model TEB')
+	ax.plot(m4[0].predict(X[idv]), label='RF model DWA')
+	ax.plot(m4[1].predict(X[idv]), label='RF model TEB')
 	# ax.plot(m3[0].predict(X[idv]), label='SVR model DWA')
 	# ax.plot(m3[1].predict(X[idv]), label='SVR model TEB')
 		# ax.plot(m2[idx].predict(X[idv]), label='Ridge model')
 		# ax.plot(m3[idx].predict(X[idv]), label='SVC model')
 	ax.plot(y1[idv], label='real %s'%names_v[idv-2], linestyle='--')
+	# ax.plot(y2[idv], label='real %s'%names_v[idv-2], linestyle='--')
 	ax.legend(loc=0)
 	# ax.set_title('model_n = %s , R2 = '%idx + str(m1[idx].score(X[idv], y1[idv])))
-	ax.set_title(names_v[idv-2])
+	ax.set_title(files[idv])
 	ax.set_ylim(0,1.5)
 
+for idx in [3]:
+	fig, ax = plt.subplots()
+	# for idx in range(n_t):
+	ax.plot(data.index.total_seconds(), data['density1'], label='density1')
+	ax.plot(data.index.total_seconds(), data['d_density1'], label='d_density1')
+	ax.legend(loc=0)
 
+	fig, ax = plt.subplots()
+	# for idx in range(n_t):
+	ax.plot(data.index.total_seconds(), data['narrowness1'], label='density1')
+	ax.plot(data.index.total_seconds(), data['d_narrowness1'], label='d_density1')
+	ax.legend(loc=0)
 
 
 plt.show()
