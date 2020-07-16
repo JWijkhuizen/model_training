@@ -42,14 +42,16 @@ def crosscorr(datax, datay, lag=0, wrap=False):
     else: 
         return datax.corr(datay.shift(lag))
 
+
+
 workspace = os.path.dirname(os.path.realpath(__file__))
 
-bag_topics = ['/metrics/performance1','/metrics/time','/metrics/safety1','/metrics/safety2','/metrics/density1','/metrics/density2','/metrics/density3','/metrics/density4','/metrics/narrowness1']
+bag_topics = ['/metrics/closeness','/metrics/performance1','/metrics/time','/metrics/safety1','/metrics/safety2','/metrics/density1','/metrics/density2','/metrics/density3','/metrics/density4','/metrics/narrowness1']
 
 # files_t = glob.glob("Experiment1*dwa2.bag")
-files_v = glob.glob("Experiment4*.bag")
+files_v = ['Experiment2_1_dwa2.bag', 'Experiment2_1_teb2.bag']
 names_v = [file.replace('Experiment4_', '') for file in files_v]
-files_t = ['Experiment1_2_dwa2.bag','Experiment1_2_teb2.bag']
+files_t = ['Experiment2_2_dwa2.bag','Experiment2_2_teb2.bag']
 files = files_t+files_v
 print(files)
 n = len(files)
@@ -60,7 +62,8 @@ print(n_t)
 # Experiment1_0_teb2.bag
 # Experiment1_2_dwa2.bag
 
-xtopics = ['density1','narrowness1','d_density1','d_narrowness1']
+xtopics = ['closeness','density1','narrowness1','d_density1','d_narrowness1']
+xtopics2 = ['density1','narrowness1','d_density1','d_narrowness1']
 
 #Import data
 X = dict()
@@ -73,9 +76,8 @@ for idx in range(n):
 	print(files[idx])
 	df1 = import_bag(files[idx], bag_topics)
 	d_density1 = pd.Series(np.gradient(df1['density1'].values), df1.index, name='d_density1')
-	d_density3 = pd.Series(np.gradient(df1['density3'].values), df1.index, name='d_density3')
 	d_narrowness1 = pd.Series(np.gradient(df1['narrowness1'].values), df1.index, name='d_narrowness1')
-	data = pd.concat([df1['safety1'],df1['safety2'],df1['performance1'], df1['density1'], df1['narrowness1'], d_narrowness1/0.001, d_density1/0.001], axis=1)
+	data = pd.concat([df1['closeness'],df1['safety1'],df1['safety2'],df1['performance1'], df1['density1'], df1['narrowness1'], d_narrowness1/0.001, d_density1/0.001], axis=1)
 	if idx in [0,1]:
 		ms = 800
 		step = 25
@@ -95,13 +97,17 @@ for idx in range(n):
 
 
 m1 = dict()
+m12 = dict()
 m2 = dict()
 m3 = dict()
+m32 = dict()
 
 index = dict()
 pr1 = dict()
+pr12 = dict()
 pr2 = dict()
 pr3 = dict()
+pr32 = dict()
 
 print('Training')
 for idx in range(n_t):
@@ -118,17 +124,21 @@ for idx in range(n_t):
 
 	print("Fitting with Linear Regression method")
 	m1[idx] = LinearRegression().fit(Xt.values, y2t.values)
+	m12[idx] = LinearRegression().fit(Xt[xtopics2].values, y2t.values)
 	# print("Fitting with Ridge method")
 	# m2[idx] = Ridge().fit(X[idx],y[idx])
 	print("Fitting with SVR method")
 	m3[idx] = SVR().fit(Xt.values,y2t.values)
+	m32[idx] = SVR().fit(Xt[xtopics2].values,y2t.values)
 	# print("Fitting with random forest thing")
 	# m4[idx] = RandomForestRegressor(n_estimators=100).fit(X[idx], y2[idx])
 
 	print('Predicting')
 	pr1[idx] = dict()
+	pr12[idx] = dict()
 	pr2[idx] = dict()
 	pr3[idx] = dict()
+	pr32[idx] = dict()
 	index[idx] = dict()
 	for idv in [2, 3]:
 		idrs = 0
@@ -140,7 +150,10 @@ for idx in range(n_t):
 
 		index[idx][idv] = Xt
 		pr1[idx][idv] = m1[idx].predict(Xt.values)
+		pr12[idx][idv] = m12[idx].predict(Xt[xtopics2].values)
+		# pr2[idx][idv] = m2[idx].predict(Xt.values)
 		pr3[idx][idv] = m3[idx].predict(Xt.values)
+		pr32[idx][idv] = m32[idx].predict(Xt[xtopics2].values)
 
 
 print("Plotting")
@@ -152,10 +165,17 @@ for idv in [2, 3]:
 	# ax.plot(index[0][idv].index.total_seconds(),pr1[0][idv], label='Linear model DWA')
 	# ax.plot(index[1][idv].index.total_seconds(),pr1[1][idv], label='Linear model TEB')
 	
+	# ax.plot(index[0][idv].index.total_seconds(),pr12[0][idv], label='Linear model DWA 2')
+	# ax.plot(index[1][idv].index.total_seconds(),pr12[1][idv], label='Linear model TEB 2')
+	
 	# SVR model
 	ax.plot(index[0][idv].index.total_seconds(),pr3[0][idv], label='SVR model DWA')
 	ax.plot(index[1][idv].index.total_seconds(),pr3[1][idv], label='SVR model TEB')
-	
+
+	ax.plot(index[0][idv].index.total_seconds(),pr32[0][idv], label='SVR model DWA')
+	ax.plot(index[1][idv].index.total_seconds(),pr32[1][idv], label='SVR model TEB')
+
+
 	# Real
 	ax.plot(y1[idv].index.total_seconds(),y1[idv].values, label='real %s'%names_v[idv-2], linestyle='--')
 	

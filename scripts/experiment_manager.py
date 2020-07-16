@@ -19,14 +19,14 @@ from launch_class import *
 from experiment_functions import *
 
 # Environment parameters
-w = [4.5,3.5,2.5]
+w = [4.0,3.0]
 l = 14
 
 obs_dense = [0.125,0.25]
-runs = 5
+runs = 3
 tries_max = 3
-d_min = [1.4, 1.4, 2]
-sx = 12
+d_min = [1.4, 1.4]
+sx = 1
 # n_max = int(max(w)*l*max(obs_dense))
 # Initial pose
 x0 = -40
@@ -43,7 +43,7 @@ goal = compute_goal(x,y,yaw)
 
 
 # Experiment name
-exp = 'Experiment1'
+exp = 'Experiment2'
 
 # Launch class
 package = 'simulation_tests'
@@ -56,7 +56,7 @@ configs = ['dwa2','teb2']
 # files.append(['navigation_dwa1.launch'])
 files.append(['navigation_dwa2.launch'])
 # files.append(['navigation_teb1.launch'])
-files.append(['navigation_teb2.launch'])
+files.append(['navigation_teb1.launch'])
 # Observers
 observers = 'observers'
 files.append(['observers.launch'])
@@ -145,7 +145,7 @@ if __name__ == '__main__':
 
 				try:
 					print('rosbag1')
-					rosbagnode = roslaunch.core.Node("rosbag", "record", name="record", args='-e "/metrics/.*" -O $(find model_training)/results/exp1/%s_%s_%s.bag'%(exp,run,config))
+					rosbagnode = roslaunch.core.Node("rosbag", "record", name="record", args='-e "/metrics/.*" -O $(find model_training)/results/exp2/%s_%s_%s.bag'%(exp,run,config))
 					launchbag = roslaunch.scriptapi.ROSLaunch()
 				except:
 					pub.publish('error_bag1')
