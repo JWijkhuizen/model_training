@@ -22,18 +22,19 @@ from experiment_functions import *
 w = [4.0,3.0]
 l = 14
 
-obs_dense = [0.125,0.25]
-runs = 3
-tries_max = 3
+obs_dense = [0.20]
+runs = 6
+tries_max = 2
 d_min = [1.4, 1.4]
 sx = 1
 # n_max = int(max(w)*l*max(obs_dense))
 # Initial pose
 x0 = -40
+x00 = x0 - 4
 y0 = 0
 yaw0 = 0
 # Goal pose
-x = 14 * len(w) * len(obs_dense) -1
+x = l * len(w) * len(obs_dense) -1 + 4
 # x = 5
 y = 0
 yaw = 0
@@ -43,20 +44,20 @@ goal = compute_goal(x,y,yaw)
 
 
 # Experiment name
-exp = 'Experiment2'
+exp = 'Experiment3'
 
 # Launch class
 package = 'simulation_tests'
 files =[]
 # Robot name
 robot = 'boxer'
-files.append(['spawn_boxer.launch', 'x:=%s'%x0, 'y:=%s'%y0, 'yaw:=%s'%yaw0])
+files.append(['spawn_boxer.launch', 'x:=%s'%x00, 'y:=%s'%y0, 'yaw:=%s'%yaw0])
 # Configurations
-configs = ['dwa2','teb2']
+configs = ['dwa2','teb1']
 # files.append(['navigation_dwa1.launch'])
 files.append(['navigation_dwa2.launch'])
-# files.append(['navigation_teb1.launch'])
 files.append(['navigation_teb1.launch'])
+# files.append(['navigation_teb2.launch'])
 # Observers
 observers = 'observers'
 files.append(['observers.launch'])
@@ -90,6 +91,8 @@ if __name__ == '__main__':
 	observer_launch = launch.run(observers)
 	observer_launch.start()
 
+	spawn_corridor(w[0],x0-l,0)
+
 	# transformations
 	try:
 		print('tfbuffer thing')
@@ -101,10 +104,11 @@ if __name__ == '__main__':
 
 	# Simulation
 	for run in range(runs): 
+	# for run in [3,4,5]:
 		pub.publish('run=%s, Seed=%s'%(run,sx))
 		nstart = 0
-		nstart_c = 0
-		xstart = -40
+		nstart_c = 10
+		xstart = x0
 		idx = 0
 		for wi in w:
 			for obs_dense_i in obs_dense:
@@ -121,6 +125,7 @@ if __name__ == '__main__':
 				xstart += 14
 				sx += 1
 			idx+=1
+		spawn_corridor(wi,xstart,nstart_c)
 		for config in configs:
 		# for config in ['teb1']:
 			for tries in [1,2,3]:
@@ -145,7 +150,7 @@ if __name__ == '__main__':
 
 				try:
 					print('rosbag1')
-					rosbagnode = roslaunch.core.Node("rosbag", "record", name="record", args='-e "/metrics/.*" -O $(find model_training)/results/exp2/%s_%s_%s.bag'%(exp,run,config))
+					rosbagnode = roslaunch.core.Node("rosbag", "record", name="record", args='-e "/metrics/.*" -O $(find model_training)/results/exp3/%s_%s_%s.bag'%(exp,run,config))
 					launchbag = roslaunch.scriptapi.ROSLaunch()
 				except:
 					pub.publish('error_bag1')

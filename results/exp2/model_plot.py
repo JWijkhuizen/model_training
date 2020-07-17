@@ -16,6 +16,7 @@ from sklearn.linear_model import Ridge
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
+from sklearn.preprocessing import StandardScaler
 import pickle
 
 
@@ -28,9 +29,9 @@ def import_bag(file, bag_topics, print_head=False):
 
 	df = df.groupby(level=0).mean()
 	# df = df.resample('1ms').mean()
-	df = df.resample('1ms').mean()
+	df = df.resample('10ms').mean()
 	df = df.interpolate(method='linear',limit_direction='both')
-	df = df.rolling(800, min_periods=1).mean()
+	df = df.rolling(400, min_periods=1).mean()
 
 	if print_head:
 		print(df.head())
@@ -120,7 +121,7 @@ bag_topics = ['/metrics/safety1','/metrics/safety2','/metrics/density1','/metric
 d_topics = ['density1','narrowness1']
 
 
-files = glob.glob("*.bag")
+files = sorted(glob.glob("*.bag"))
 print(files)
 n = len(files)
 
@@ -135,7 +136,7 @@ for idx in range(n):
 
 
 # print('Train and predict')	
-idys = [2,5]
+idys = [4,5]
 
 xtopics = ['density1','d_density1','narrowness1','d_narrowness1']
 ytopic = 'safety2'
@@ -148,12 +149,21 @@ pkl_filename = "model_teb.pkl"
 with open(pkl_filename, 'rb') as file:
     m2 = pickle.load(file)
 
+# print(m1.get_param())
+
+colors = ['tab:blue','tab:orange']
+idc = 0
 for idy in idys:
-	df[idy] = df[idy].resample('100ms').mean()
 	print('Predict')
-	y1 = m1.predict(df[idy][xtopics].values)
-	y2 = m2.predict(df[idy][xtopics].values)
-	yv = df[idy][ytopic].values
+	X = df[idy][xtopics].values
+	y = df[idy][ytopic].values
+	# sc_X = StandardScaler()
+	# sc_y = StandardScaler()
+	# X = sc_X.fit_transform(X)
+	# y = sc_y.fit_transform(y)
+	y1 = m1.predict(X)
+	y2 = m2.predict(X)
+
 
 	print("Plotting")
 	fig, ax = plt.subplots()
@@ -161,13 +171,11 @@ for idy in idys:
 	ax.plot(df[idy].index.total_seconds(),y1, label='DWA', color='tab:blue')#, score = %s'%(round(m1.score(df[idy][xtopics].values,df[idy][ytopic].values),2)))
 	ax.plot(df[idy].index.total_seconds(),y2, label='TEB', color='tab:orange')#, score = %s'%(round(m1.score(df[idy][xtopics].values,df[idy][ytopic].values),2)))
 	# Real
-	if idy == 2:
-		ax.plot(df[idy].index.total_seconds(),yv, label='real', linestyle='--', color='tab:blue')
-	else:
-		ax.plot(df[idy].index.total_seconds(),yv, label='real', linestyle='--', color='tab:orange')
+	ax.plot(df[idy].index.total_seconds(),y, label='real', linestyle='--', color=colors[idc])
 	ax.legend(loc=0)
 	ax.set_title(files[idy])
-	ax.set_ylim(0,1.2)
+	# ax.set_ylim(0,1.2)
+	idc += 1
 
 
 plt.show()

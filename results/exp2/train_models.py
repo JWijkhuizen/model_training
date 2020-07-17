@@ -16,25 +16,28 @@ from sklearn.linear_model import Ridge
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import GridSearchCV
 import pickle
 
 
 def import_bag(file, bag_topics, print_head=False):
-	df = rosbag_pandas.bag_to_dataframe(file, include=bag_topics)
-	df.index -= df.index[0]
-	df.index = pd.to_timedelta(df.index, unit='s')
-	topics = [topic.replace('/metrics/','').replace('/data','') for topic in list(df.columns)]
-	df.columns = topics
+    df = rosbag_pandas.bag_to_dataframe(file, include=bag_topics)
+    df.index -= df.index[0]
+    df.index = pd.to_timedelta(df.index, unit='s')
+    topics = [topic.replace('/metrics/','').replace('/data','') for topic in list(df.columns)]
+    df.columns = topics
 
-	df = df.groupby(level=0).mean()
-	# df = df.resample('1ms').mean()
-	df = df.resample('1ms').mean()
-	df = df.interpolate(method='linear',limit_direction='both')
-	df = df.rolling(800, min_periods=1).mean()
+    df = df.groupby(level=0).mean()
+    # print('Amount of data points before resampling = %s'%len(df))
+    df = df.resample('10ms').mean()
+    # print('Amount of data points after resampling = %s'%len(df))
+    df = df.interpolate(method='linear',limit_direction='both')
+    df = df.rolling(200, min_periods=1).mean()
 
-	if print_head:
-		print(df.head())
-	return df
+    if print_head:
+    	print(df.head())
+    return df
 
 def add_derivs(df,topics):
 	for topic in topics:
@@ -120,38 +123,65 @@ bag_topics = ['/metrics/safety1','/metrics/safety2','/metrics/density1','/metric
 d_topics = ['density1','narrowness1']
 
 
-files = glob.glob("*.bag")
-print(files)
-n = len(files)
 
-
-print("Import data")
-df = dict()
-for idx in range(n):
-	print(files[idx])
-	df[idx] = import_bag(files[idx], bag_topics)
-	df[idx] = add_derivs(df[idx],d_topics)
-
-
-
-
-xtopics = ['density1','d_density1','narrowness1','d_narrowness1']
+xtopics = [['density1','d_density1','narrowness1','d_narrowness1'],['density1','d_density1','narrowness1'],['density1','d_density1'],['density1','narrowness1']]
 ytopic = 'safety2'
 
 # DWA
-idx = 1
-print('Train DWA from file: %s'%files[idx])
-m1 = SVR().fit(df[idx][xtopics].values,df[idx][ytopic].values)
-print('Score = %s'%m1.score(df[idx][xtopics].values,df[idx][ytopic].values))
-pkl_filename = "model_dwa.pkl"
-with open(pkl_filename, 'wb') as file:
-    pickle.dump(m1, file)
+files = sorted(glob.glob("*teb2.bag"))
+df = dict()
+sc = []
+m = dict()
+idxy = 0
+for idx in range(len(files)):
+    for idy in range(len(xtopics)):
+        # print("Import from %s"%files[idx])
+        df[idx] = import_bag(files[idx], bag_topics)
+        df[idx] = add_derivs(df[idx],d_topics)
+        # print('Train DWA from file: %s'%files[idx])
+        # print('use the topics: %s'%(xtopics[idy]))
+        X = df[idx][xtopics[idy]].values
+        y = df[idx][ytopic].values
+
+        m[idxy] = GridSearchCV(SVR(kernel='rbf', gamma=0.1),
+                       param_grid={"C": [1e0, 1e1, 1e2, 1e3],
+                                   "gamma": np.logspace(-2, 2, 5)}, n_jobs=-1)
+        m[idxy].fit(X,y)
+        sc.append(m[idxy].score(X,y))
+        print('idx=%s, idy=%s, Score = %s'%(idx,idy,sc[-1]))
+        idxy += 1
+sc_max = max(sc)
+sc_max_id = np.argmax(sc)
+print('Best model = model nr: %s, with score:%s'%(sc_max_id,round(sc_max,3)))
+# pkl_filename = "model_dwa.pkl"
+# with open(pkl_filename, 'wb') as file:
+#     pickle.dump(m[sc_max_id], file)
 
 # TEB
-idx = 3
-print('Train TEB from file: %s'%files[idx])
-m2 = SVR().fit(df[idx][xtopics].values,df[idx][ytopic].values)
-print('Score = %s'%m2.score(df[idx][xtopics].values,df[idx][ytopic].values))
-pkl_filename = "model_teb.pkl"
-with open(pkl_filename, 'wb') as file:
-    pickle.dump(m2, file)
+# files = sorted(glob.glob("*teb2.bag"))
+# df = dict()
+# sc = []
+# m = dict()
+# for idx in range(len(files)):
+#     print("Import from %s"%files[idx])
+#     df[idx] = import_bag(files[idx], bag_topics)
+#     df[idx] = add_derivs(df[idx],d_topics)
+#     print('Train TEB from file: %s'%files[idx])
+#     X = df[idx][xtopics].values
+#     y = df[idx][ytopic].values
+#     # sc_X = StandardScaler()
+#     # sc_y = StandardScaler()
+#     # X = sc_X.fit_transform(X)
+#     # y = sc_y.fit_transform(y)
+#     m[idx] = GridSearchCV(SVR(kernel='rbf', gamma=0.1),
+#                    param_grid={"C": [1e0, 1e1, 1e2, 1e3],
+#                                "gamma": np.logspace(-2, 2, 5)})
+#     m[idx].fit(X,y)
+#     sc.append(m[idx].score(X,y))
+#     print('Score = %s'%sc[-1])
+# sc_max = max(sc)
+# sc_max_id = np.argmax(sc)
+# print('Best model = model nr: %s, with score:%s'%(sc_max_id,round(sc_max,3)))
+# pkl_filename = "model_teb.pkl"
+# with open(pkl_filename, 'wb') as file:
+#     pickle.dump(m[sc_max_id], file)

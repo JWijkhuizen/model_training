@@ -114,14 +114,17 @@ print("Plotting")
 # 	ax.legend(loc=0)
 
 
-topics_i = ['closeness','d_closeness','density1','d_density1','narrowness1','d_narrowness1']
-topics_o = ['safety1']
-idx = 1
-for topic_i in topics_i:
-	for topic_o in topics_o:
-		title = 'Cross correlation of %s and %s'%(topic_i,topic_o)
-		graph_xcorr(df[idx][topic_o],df[idx][topic_i],title)
+# topics_i = ['closeness','d_closeness','density1','d_density1','narrowness1','d_narrowness1']
+# topics_o = ['safety1']
+# idx = 1
+# for topic_i in topics_i:
+# 	for topic_o in topics_o:
+# 		title = 'Cross correlation of %s and %s'%(topic_i,topic_o)
+# 		graph_xcorr(df[idx][topic_o],df[idx][topic_i],title)
 
-
+idys = [2,5]
+fig, ax = plt.subplots()
+for idy in idys:
+    ax.plot(df[idy].index.total_seconds(),df[idy].safety1)
 
 plt.show()
