@@ -137,7 +137,9 @@ for idx in range(len(files)):
 
 xtopics = ['density1','d_density1','narrowness1','d_narrowness1']
 ytopic = 'safety2'
-models = ['modelSVR_rbf_dwa2_2','modelSVR_poly_teb1_3']
+
+models = ['modelRF_dwa2_0',
+		  'modelRF_teb1_0']
 
 print('Load models')
 pkl_filename = "models/%s.pkl"%models[0]
