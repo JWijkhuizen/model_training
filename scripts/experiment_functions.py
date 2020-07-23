@@ -102,9 +102,9 @@ def move_obstacles(w,obs_dense,d_min,sx,xstart,nstart,idy):
 				tries += 1
 			if tries > max_tries:
 				break
-		if idx > 0:
-			print('tries = %s'%tries)
-			print('min(d) = %s'%(min(d)))
+		# if idx > 0:
+			# print('tries = %s'%tries)
+			# print('min(d) = %s'%(min(d)))
 		if tries < 100:
 			obs_x.append(xi)
 			obs_y.append(yi)
@@ -147,7 +147,7 @@ def check_arrived(listener,goal,goal_tol):
   	# print("Not there yet")
   	return False
 
-def spawn_corridor(w,xstart,nstart):
+def spawn_corridor(w,n,xstart,nstart):
 	# Model path
 	workspace = os.path.dirname(os.path.realpath(__file__)).replace('model_training/scripts','')
 	path_models = workspace+'ahxl_gazebo/gazebo_models/'
@@ -161,21 +161,23 @@ def spawn_corridor(w,xstart,nstart):
 	initial_pose = Pose()
 
 	# Spawn shelves
-	idx = 1
+	x = [0, 6, 7, 13, 14, 20, 21, 27]
 	s = 1
 	yaw = 0
-	for i in [0, 7, 6, 13]:
-		if idx > 2:
+	for i in range(2*n):
+		if (i % 2) == 0:
+			s = 1
+			yaw = 0
+		else:
 			s = -1
 			yaw = math.pi
-		initial_pose.position.x = i+xstart
+		initial_pose.position.x = x[i]+xstart
 		initial_pose.position.y = s*(w/2 + 0.5)
 		initial_pose.position.z = 0
 		initial_pose.orientation = Quaternion(*quaternion_from_euler(0,0,yaw))
 
 		rospy.wait_for_service('gazebo/spawn_sdf_model')
-		spawn_model_prox("shelves%s"%(idx+nstart), shelves, "robotos_name_space", initial_pose, "world")
-		idx += 1
+		spawn_model_prox("shelves%s"%(i+nstart), shelves, "robotos_name_space", initial_pose, "world")
 	print('Width of the corridor = %sm'%w)
 
 def reset_robot(x,y,yaw):
@@ -198,15 +200,15 @@ def compute_goal(x,y,yaw):
 
 	return goal
 
-# def compute_goal(x,y,yaw,listener):
-# 	try:
-# 		trans = listener.lookup_transform('map', 'base_link', rospy.Time(0))
-# 	except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-# 		print ("Could not get TF")
-# 		return False
-# 	# goal.target_pose.pose.orientation += Quaternion(*quaternion_from_euler(0,0,yaw))
-# 	euler = euler_from_quaternion([trans.transform.rotation.x,trans.transform.rotation.y,trans.transform.rotation.z,trans.transform.rotation.w])
-# 	yaw0 = euler[2]
+def compute_new_goal(x,y,yaw,listener):
+	try:
+		trans = listener.lookup_transform('map', 'base_link', rospy.Time(0))
+	except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+		print ("Could not get TF")
+		return False
+	# goal.target_pose.pose.orientation += Quaternion(*quaternion_from_euler(0,0,yaw))
+	euler = euler_from_quaternion([trans.transform.rotation.x,trans.transform.rotation.y,trans.transform.rotation.z,trans.transform.rotation.w])
+	yaw0 = euler[2]
 
 	print(trans.transform)
 	goal = move.MoveBaseGoal()
@@ -217,3 +219,5 @@ def compute_goal(x,y,yaw):
 	print(goal)
 
 	return goal
+
+	

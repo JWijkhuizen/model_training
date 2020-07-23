@@ -19,45 +19,47 @@ from launch_class import *
 from experiment_functions import *
 
 # Environment parameters
-w = [4.0,3.0]
-l = 14
+w = [4.0, 3.0]
+n_shelf = 2
+l = 7*n_shelf
 
 obs_dense = [0.20]
-runs = 6
+runs = 10
 tries_max = 2
 d_min = [1.4, 1.4]
 sx = 1
 # n_max = int(max(w)*l*max(obs_dense))
 # Initial pose
-x0 = -40
-x00 = x0 - 4
+x0 = 0
+x0_r = x0 - 2
 y0 = 0
 yaw0 = 0
 # Goal pose
-x = l * len(w) * len(obs_dense) -1 + 4
-# x = 5
-y = 0
-yaw = 0
+xg = l * len(w) * len(obs_dense) -1
+xg_r = xg + 3
+yg = 0
+yawg = 0
 # goal = compute_goal(x,y,yaw)
 goal_tol = 1					# in meters
-goal = compute_goal(x,y,yaw)
+goal = compute_goal(xg_r,yg,yawg)
+print(goal)
 
 
 # Experiment name
-exp = 'Experiment3'
+exp = 'Experiment5'
 
 # Launch class
 package = 'simulation_tests'
 files =[]
 # Robot name
 robot = 'boxer'
-files.append(['spawn_boxer.launch', 'x:=%s'%x00, 'y:=%s'%y0, 'yaw:=%s'%yaw0])
+files.append(['spawn_boxer.launch', 'x:=%s'%x0_r, 'y:=%s'%y0, 'yaw:=%s'%yaw0])
 # Configurations
-configs = ['dwa2','teb1']
-# files.append(['navigation_dwa1.launch'])
+configs = ['dwa1','dwa2','teb1','teb2']
+files.append(['navigation_dwa1.launch'])
 files.append(['navigation_dwa2.launch'])
 files.append(['navigation_teb1.launch'])
-# files.append(['navigation_teb2.launch'])
+files.append(['navigation_teb2.launch'])
 # Observers
 observers = 'observers'
 files.append(['observers.launch'])
@@ -86,21 +88,32 @@ if __name__ == '__main__':
 	rospy.Subscriber("/move_base/status", GoalStatusArray, status_callback)
 	pub.publish('Experiment start')
 
+	# Launch robot
+	robot_launch = launch.run(robot)
+	robot_launch.start()
 
 	# Observers launch
 	observer_launch = launch.run(observers)
 	observer_launch.start()
 
-	spawn_corridor(w[0],x0-l,0)
+	# Spawn init shelves and obstacles
+	nstart = 0
+	nstart_c = 10
+	xstart = x0
+	spawn_corridor(w[0],1,x0-7,0)
+	for wi in w:
+		for obs_dense_i in obs_dense:
+			n_max = int(wi*l*obs_dense_i)
+			spawn_obs_init(n_max,xstart,nstart)
+			spawn_corridor(wi,n_shelf,xstart,nstart_c)
+			nstart += n_max+1
+			nstart_c += 10
+			xstart += l
+	spawn_corridor(wi,1,xstart,nstart_c)
 
 	# transformations
-	try:
-		print('tfbuffer thing')
-		tfBuffer = tf2_ros.Buffer()
-		listener = tf2_ros.TransformListener(tfBuffer)
-	except:
-		pub.publish('error_tf1')
-
+	tfBuffer = tf2_ros.Buffer()
+	listener = tf2_ros.TransformListener(tfBuffer)
 
 	# Simulation
 	for run in range(runs): 
@@ -113,70 +126,48 @@ if __name__ == '__main__':
 		for wi in w:
 			for obs_dense_i in obs_dense:
 				n_max = int(wi*l*obs_dense_i)
-				spawn_obs_init(n_max,xstart,nstart)
+				# Place obstacles randomly
 				move_obstacles(wi,obs_dense_i,d_min[idx],sx,xstart,nstart,idx)
-				spawn_corridor(wi,xstart,nstart_c)
-
-				print('n_max=%s, n_start=%s w=%s, C=%s, xstart=%s'%(n_max,nstart,wi,obs_dense_i,xstart))
-
 				# Next start values
 				nstart += n_max+1
 				nstart_c += 10
 				xstart += 14
 				sx += 1
 			idx+=1
-		spawn_corridor(wi,xstart,nstart_c)
+		
 		for config in configs:
 		# for config in ['teb1']:
-			for tries in [1,2,3]:
-				
-				# Load launch files
-				robot_launch = launch.run(robot)
-				config_launch = launch.run(config)
-				
+			for tries in range(1,tries_max,1):
 				arrive = False
 				fail = False
 
-				# Launch robot and navigation
-				robot_launch.start()
-				rospy.sleep(2)
-
-				try:
-					print('config start')
-					config_launch.start()
-				except:
-					pub.publish('error_config_launch')
+				# Reset robot and goal
+				reset_robot(x0_r,y0,yaw0)
 				rospy.sleep(1)
 
-				try:
-					print('rosbag1')
-					rosbagnode = roslaunch.core.Node("rosbag", "record", name="record", args='-e "/metrics/.*" -O $(find model_training)/results/exp3/%s_%s_%s.bag'%(exp,run,config))
-					launchbag = roslaunch.scriptapi.ROSLaunch()
-				except:
-					pub.publish('error_bag1')
+				# Load and launch config
+				config_launch = launch.run(config)
+				config_launch.start()
+				rospy.sleep(1)
 
+				goal = compute_new_goal(xg_r,yg,yawg,tfBuffer)
+
+				# Bag
+				rosbagnode = roslaunch.core.Node("rosbag", "record", name="record", args='-e "/metrics/.*" -O $(find model_training)/bags/%s_%s_%s.bag'%(exp,run,config))
+				launchbag = roslaunch.scriptapi.ROSLaunch()
 				try:
-					print('bag launch')
 					launchbag.start()
 					process = launchbag.launch(rosbagnode)
 				except:
-					pub.publish('error_bag2')
+					pub.publish('error with bag')
 
 				# Run SimpleActionClient, needed for publishing goals
-				try:
-					print('client launch')
-					client = actionlib.SimpleActionClient('move_base', move.MoveBaseAction)
-					client.wait_for_server()
-				except:
-					pub.publish('error_client_start')
+				client = actionlib.SimpleActionClient('move_base', move.MoveBaseAction)
+				client.wait_for_server()
 
 				# Start
 				starttime = rospy.get_time()
-				try:
-					print('send goal')
-					client.send_goal(goal)
-				except:
-					pub.publish('error_client_send_goal')
+				client.send_goal(goal)
 
 				# Loop untill robot is at the goal
 				while not arrive and not fail:
@@ -189,27 +180,19 @@ if __name__ == '__main__':
 					endtime = rospy.get_time()
 					duration = endtime-starttime
 				pub2.publish(duration)
-				# Kill robot and navigation config
-				try:
-					print('kill bag')
-					process.stop()
-				except:
-					pub.publish('error kill bag')
-				try:
-					print('config shutdown')
-					config_launch.shutdown()
-				except:
-					pub.publish('config3')
-				try:
-					print('robot shutdown')
-					robot_launch.shutdown()
-				except:
-					pub.publish('robot3')
 
-				delete_robot_client_("/")
+				# Kill things
+				process.stop()
+				config_launch.shutdown()
+
+				# End of try
 				pub.publish('Config=%s, Try=%s, Time=%s'%(config,tries,duration))
 
-				if arrive or tries == 3:
+				if arrive or tries == tries_max:	# This was last try
 					break
+
+	# End
+	robot_launch.shutdown()
+	delete_robot_client_("/")
 	observer_launch.shutdown()
 	pub.publish('Experiment finished')

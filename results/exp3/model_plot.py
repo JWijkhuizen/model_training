@@ -138,7 +138,7 @@ for idx in range(len(files)):
 xtopics = ['density1','d_density1','narrowness1','d_narrowness1']
 ytopic = 'safety2'
 
-models = ['modelRF_dwa2_0',
+models = ['modelSVR_poly_teb1_3',
 		  'modelRF_teb1_0']
 
 print('Load models')
