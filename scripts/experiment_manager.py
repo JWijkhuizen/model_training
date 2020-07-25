@@ -16,7 +16,7 @@ from robot_localization.srv import SetPose
 import rosbag
 
 from launch_class import *
-from experiment_functions import *
+from functions_experiment import *
 
 # Environment parameters
 w = [4.0, 3.0]
@@ -137,7 +137,7 @@ if __name__ == '__main__':
 		
 		for config in configs:
 		# for config in ['teb1']:
-			for tries in range(1,tries_max,1):
+			for tries in range(len(tries_max)):
 				arrive = False
 				fail = False
 
@@ -188,7 +188,7 @@ if __name__ == '__main__':
 				# End of try
 				pub.publish('Config=%s, Try=%s, Time=%s'%(config,tries,duration))
 
-				if arrive or tries == tries_max:	# This was last try
+				if arrive or tries == tries_max-1:	# This was last try
 					break
 
 	# End

@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 
-import rospy
 import sys
 import os
+
+import rospy
+import rospkg 
+import tf2_ros
+
+import math
 from random import seed
 from random import random
-import math
-import tf2_ros
+
 from gazebo_msgs.srv import SpawnModel
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import Quaternion
@@ -14,7 +18,6 @@ from tf.transformations import quaternion_from_euler
 from tf.transformations import euler_from_quaternion
 from gazebo_msgs.srv import DeleteModel
 import move_base_msgs.msg as move
-import rospkg 
 from gazebo_msgs.msg import ModelState 
 from gazebo_msgs.srv import SetModelState
 
@@ -31,7 +34,7 @@ def reset_obs_pos(n,xstart):
 def spawn_obs_init(n,xstart,nstart):
 	# Model path
 	workspace = os.path.dirname(os.path.realpath(__file__)).replace('model_training/scripts','')
-	path_models = workspace+'ahxl_gazebo/gazebo_models/'
+	path_models = workspace+'/ahxl_gazebo/gazebo_models/'
 
 
 	obs_x, obs_y = reset_obs_pos(n,xstart)
