@@ -8,8 +8,6 @@ class launch_class:
     self.file = dict()
     self.launchfile = dict()
     self.args = dict()
-    self.uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
-    roslaunch.configure_logging(self.uuid)
 
     # Fill the launchfiles and args
     for i in range(len(files)):
@@ -28,5 +26,14 @@ class launch_class:
       self.args[name] = file[1]
       self.launchfile[name] = (self.file[name], self.args[name])
 
+  def new_uuid(self):
+    uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+    roslaunch.configure_logging(uuid)
+    return uuid
+
+
   def run(self,name):
-  	return roslaunch.parent.ROSLaunchParent(self.uuid, [self.launchfile[name]])
+    # New uuid for every launch instance
+    # I suspect that sometimes gazebo crashes if the same uuid is used again for many times.
+    uuid = self.new_uuid()
+    return roslaunch.parent.ROSLaunchParent(uuid, [self.launchfile[name]])

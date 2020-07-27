@@ -46,7 +46,7 @@ print(goal)
 
 
 # Experiment name
-exp = 'Experiment5'
+exp = 'Experiment1'
 
 # Launch class
 package = 'simulation_tests'
@@ -89,8 +89,8 @@ if __name__ == '__main__':
 	pub.publish('Experiment start')
 
 	# Launch robot
-	robot_launch = launch.run(robot)
-	robot_launch.start()
+	# robot_launch = launch.run(robot)
+	# robot_launch.start()
 
 	# Observers launch
 	observer_launch = launch.run(observers)
@@ -137,12 +137,13 @@ if __name__ == '__main__':
 		
 		for config in configs:
 		# for config in ['teb1']:
-			for tries in range(len(tries_max)):
+			for tries in range(tries_max):
 				arrive = False
 				fail = False
 
 				# Reset robot and goal
-				reset_robot(x0_r,y0,yaw0)
+				robot_launch = launch.run(robot)
+				robot_launch.start()
 				rospy.sleep(1)
 
 				# Load and launch config
@@ -150,7 +151,7 @@ if __name__ == '__main__':
 				config_launch.start()
 				rospy.sleep(1)
 
-				goal = compute_new_goal(xg_r,yg,yawg,tfBuffer)
+				# goal = compute_new_goal(xg_r,yg,yawg,tfBuffer)
 
 				# Bag
 				rosbagnode = roslaunch.core.Node("rosbag", "record", name="record", args='-e "/metrics/.*" -O $(find model_training)/bags/%s_%s_%s.bag'%(exp,run,config))
@@ -184,6 +185,8 @@ if __name__ == '__main__':
 				# Kill things
 				process.stop()
 				config_launch.shutdown()
+				robot_launch.shutdown()
+				delete_robot_client_("/")
 
 				# End of try
 				pub.publish('Config=%s, Try=%s, Time=%s'%(config,tries,duration))
@@ -192,7 +195,5 @@ if __name__ == '__main__':
 					break
 
 	# End
-	robot_launch.shutdown()
-	delete_robot_client_("/")
 	observer_launch.shutdown()
 	pub.publish('Experiment finished')
