@@ -36,7 +36,7 @@ configs = ['dwa2','teb1']
 # configs = ['dwa2']
 # Import parameters
 stepsize = 10
-rolling = 400
+rolling = 100
 
 # Dependent variables
 xtopics = ['density1','d_density1','narrowness1','d_narrowness1']
