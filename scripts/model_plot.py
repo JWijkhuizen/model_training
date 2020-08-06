@@ -146,7 +146,7 @@ ytopic = 'performance2_3'
 samplesize = 10
 rolling = 100
 
-models = ['performance2_3_RF_teb1_8']
+models = ['performance2_3_RF_teb1_kfold5']
 
 
 # Import Bag files into pandas
@@ -164,6 +164,7 @@ for config in configs:
     for idx in range(len(files[config])):
         df[config][idx] = import_bag(files[config][idx],samplesize,rolling)
         df[config][idx] = add_derivs(df[config][idx],d_topics)
+        df[config][idx] = df[config][idx].iloc[(4000/samplesize):]
 
         X[config][idx] = df[config][idx][xtopics].values
         y[config][idx] = df[config][idx][ytopic].values
@@ -186,7 +187,7 @@ with open(pkl_filename, 'rb') as file:
 colors = ['tab:blue','tab:orange']
 # for idy in range(len(files)):
 for config in configs:
-	for idy in [8]:
+	for idy in range(n_exp):
 		print('Predict')
 		X = df[config][idy][xtopics].values
 		y = df[config][idy][ytopic].values

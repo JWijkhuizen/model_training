@@ -33,26 +33,26 @@ def add_derivs(df,topics):
         df['d_%s'%topic] = np.gradient(df[topic].values)/(df.index[1].total_seconds())
     return df
 
-def determine_lags(df1,topics_shift,topic_ref):
+def determine_lags(df1,topics_shift,topic_ref,samplesize):
     ms = 800
-    step = 25
-    lags = range(-int(ms),int(ms),step)
+    n = 800/samplesize
+    lags = range(-int(n),int(n),1)
 
-    lag_ms = []
+    lag_n = []
     for topic_shift in topics_shift:
         rs = [abs(crosscorr(df1[topic_shift],df1[topic_ref], lag)) for lag in lags]
         rs_abs =  [abs(rsi) for rsi in rs] 
-        lag_ms.append(np.argmax(rs_abs)*step - ms)
-        print('For topic_shift: %s, Max rs = %s, at lag = %s'%(topic_shift,max(rs, key=abs),lag_ms[-1]))
+        lag_n.append(np.argmax(rs_abs) - n)
+        print('For topic_shift: %s, Max rs = %s, at lag = %s'%(topic_shift,max(rs, key=abs),samplesize*lag_n[-1]))
     
-    return lag_ms
+    return lag_n
 
-def shift_lags(df,topics_shift,lag_ms):
+def shift_lags(df,topics_shift,lag_n):
     # Make a copy so the original will not be modified
     df1 = df.copy()
 
-    for idx in range(len(lag_ms)):
-        df1[topics_shift[idx]] = df1[topics_shift[idx]].shift(lag_ms[idx])
+    for idx in range(len(lag_n)):
+        df1[topics_shift[idx]] = df1[topics_shift[idx]].shift(lag_n[idx])
     df1 = df1.dropna()
     return df1
 
