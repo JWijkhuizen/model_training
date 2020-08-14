@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3.6
 
 # import rosbag
 import rospy
@@ -19,7 +19,7 @@ from sklearn.svm import SVR
 from sklearn.preprocessing import StandardScaler
 import pickle
 
-from postprocess_functions import *
+from functions_postprocess import *
 
 # Paths
 rospack = rospkg.RosPack()
@@ -31,12 +31,14 @@ bag_topics = ['/metrics/safety1','/metrics/safety2','/metrics/density1','/metric
 d_topics = ['density1','narrowness1']
 
 # Experiment and configs to import
-exp = 'Experiment4'
-configs = ['dwa2','teb1']
+exp = 'Experiment6'
+configs = ['dwa1']
 
 # Data postprocess
 samplesize = 10		# [ms] resample size
 rolling = 20		# [n]  for smooting the data
+
+n = 10
 
 # Bag files
 os.chdir(dir_bags)
@@ -52,23 +54,26 @@ print('idx   File')
 print("Import bags")
 df = dict()
 df2 = dict()
-for idx in range(len(files)):
-	df[idx] = import_bag(files[idx], bag_topics, samplesize, rolling)
+for idx in range(n):
+	df[idx] = import_bag(files[idx], samplesize, rolling)
 	df[idx] = add_derivs(df[idx],d_topics)
 
 # topics to plot
-topics = ['performance2', 'safety1']
+topics = ['safety1', 'safety2']
+labels = dict()
+labels['safety1'] = 'safety [0,1]'
+labels['safety2'] = 'safety without limit at 1'
 
 # colors = ['tab:blue','tab:orange']
 # idc = 0
 # for idy in range(len(files)):
 print("Plotting")
-for idx in [3,13]:
+for idx in range(n):
 	
 	fig, ax = plt.subplots()
 	# Predictions
 	for topic in topics:
-		ax.plot(df[idx].index.total_seconds(),df[idx][topic].values, label=df[idx][topic].name)
+		ax.plot(df[idx].index.total_seconds(),df[idx][topic].values, label=labels[topic])
 	ax.legend(loc=0)
 	ax.set_title(files[idx])
 

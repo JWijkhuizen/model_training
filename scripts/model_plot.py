@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3.6
 
 # import rosbag
 import rospy
@@ -132,31 +132,38 @@ dir_figs = path + '/figures/'
 dir_models = path + '/models/'
 
 # Experiment name and configs
-exp = 'Experiment1'
+exp = 'Experiment5'
 # configs = ['dwa1','dwa2','teb1','teb2']
 configs = ['teb1']
 
 d_topics = ['density1','narrowness1']
 
-xtopics = ['density1','d_density1','narrowness1','d_narrowness1']
-# ytopic = 'safety1'
-ytopic = 'performance2_3'
+xtopics = ['density1','d_density1','narrowness1','d_narrowness1','performance1']
+ytopics = ['safety2','performance2_2']
 
 # Resamplesize and smoothing (rolling)
 samplesize = 10
 rolling = 100
 
-models = ['performance2_3_RF_teb1_kfold5']
+# TEB
+model = dict()
+model['safety2'] = 'safety2_RF_teb1_10_best.pkl'
+model['performance2_2'] = 'performance2_2_SVR_rbf_teb1_0_best.pkl'
 
+lags = dict()
+lags['safety2'] = [-64, -39, 0, 65, 12]
+lags['performance2_2'] = [ 72, 77, 84, 61, 113]
 
 # Import Bag files into pandas
 os.chdir(dir_bags)
 files = dict()
 df = dict()
+df_shift = dict()
 X = dict()
 y = dict()
 for config in configs:
     df[config] = dict()
+    df_shift[config] = dict()
     X[config] = dict()
     y[config] = dict()
 
@@ -164,10 +171,16 @@ for config in configs:
     for idx in range(len(files[config])):
         df[config][idx] = import_bag(files[config][idx],samplesize,rolling)
         df[config][idx] = add_derivs(df[config][idx],d_topics)
-        df[config][idx] = df[config][idx].iloc[(4000/samplesize):]
+        df[config][idx] = df[config][idx].iloc[int(4000/samplesize):]
 
-        X[config][idx] = df[config][idx][xtopics].values
-        y[config][idx] = df[config][idx][ytopic].values
+        X[config][idx] = dict()
+        y[config][idx] = dict()
+        df_shift[config][idx] = dict()
+        for ytopic in ytopics:
+            df_shift[config][idx][ytopic] = shift_lags(df[config][idx],xtopics,lags[ytopic])
+
+            X[config][idx][ytopic] = df_shift[config][idx][ytopic][xtopics].values
+            y[config][idx][ytopic] = df_shift[config][idx][ytopic][ytopic].values
 n_exp = len(files[configs[0]])
 
 # Print all the files with idx
@@ -176,44 +189,46 @@ for idx in range(len(files[configs[0]])):
     print('%-5s %-s'%(idx, files[configs[0]][idx]))
 
 print('Load models')
-pkl_filename = dir_models + "%s.pkl"%models[0]
-with open(pkl_filename, 'rb') as file:
-    m1 = pickle.load(file)
-# pkl_filename = dir_models + "%s.pkl"%models[1]
-# with open(pkl_filename, 'rb') as file:
-#     m2 = pickle.load(file)
+m = dict()
+for ytopic in ytopics:
+	pkl_filename = dir_models + model[ytopic]
+	with open(pkl_filename, 'rb') as file:
+	    m[ytopic] = pickle.load(file)
+
 
 
 colors = ['tab:blue','tab:orange']
 # for idy in range(len(files)):
 for config in configs:
-	for idy in range(n_exp):
-		print('Predict')
-		X = df[config][idy][xtopics].values
-		y = df[config][idy][ytopic].values
+	for idx in range(n_exp):
+		for ytopic in ytopics:
+			print('Predict')
 
-		y1 = m1.predict(X)
-		for i in range(len(y1)):
-			y1[i] = min(y1[i],1)
-		# y2 = m2.predict(X)
+			y1 = m[ytopic].predict(X[config][idx][ytopic])
+			for i in range(len(y1)):
+				y1[i] = min(y1[i],1)
+			if ytopic == 'safety2':
+				y0 = df_shift[config][idx][ytopic]['safety1'].values
+			else:
+				y0 = y[config][idx][ytopic]
 
 
-		print("Plotting")
-		fig, ax = plt.subplots()
-		# Predictions
-		ax.plot(df[config][idy].index.total_seconds(),y1, label='Model', color=colors[1])#, score = %s'%(round(m1.score(df[idy][xtopics].values,df[idy][ytopic].values),2)))
-		# ax.plot(df[idy].index.total_seconds(),y2, label='TEB', color='tab:orange')#, score = %s'%(round(m1.score(df[idy][xtopics].values,df[idy][ytopic].values),2)))
-		# Real
-		ax.plot(df[config][idy].index.total_seconds(),y, label='real', linestyle='--', color=colors[0])
-		ax.legend(loc=0)
-		ax.set_title('Best safety model and real %s \n trained on run 1, tested on run %s , config = %s \n rmse = %s'%(ytopic,idy,config,round(mean_squared_error(y, y1),5)))
-		# ax.set_ylim(0,1.2)
-		# if idy == len(files_dwa2)-1:
-		# print(y1)
-		# print('rmse = %s'%(mean_squared_error(y, y1))
-		plt.tight_layout()
-		# Save fig
-		# fig.savefig(dir_figs + 'Modelresult_teb1_train1_test%s'%idy + '.png')
+			print("Plotting")
+			fig, ax = plt.subplots()
+			# Predictions
+			ax.plot(df_shift[config][idx][ytopic].index.total_seconds(),y1, label='Model', color=colors[1])#, score = %s'%(round(m1.score(df[idy][xtopics].values,df[idy][ytopic].values),2)))
+			# ax.plot(df[idy].index.total_seconds(),y2, label='TEB', color='tab:orange')#, score = %s'%(round(m1.score(df[idy][xtopics].values,df[idy][ytopic].values),2)))
+			# Real
+			ax.plot(df_shift[config][idx][ytopic].index.total_seconds(),y0, label='real', linestyle='--', color=colors[0])
+			ax.legend(loc=0)
+			ax.set_title('Model and real for %s \n, tested on run %s , config = %s \n rmse = %s'%(ytopic,idx,config,round(mean_squared_error(y0, y1),5)))
+			# ax.set_ylim(0,1.2)
+			# if idy == len(files_dwa2)-1:
+			# print(y1)
+			# print('rmse = %s'%(mean_squared_error(y, y1))
+			plt.tight_layout()
+			# Save fig
+			# fig.savefig(dir_figs + 'Modelresult_teb1_train1_test%s'%idy + '.png')
 
 
 

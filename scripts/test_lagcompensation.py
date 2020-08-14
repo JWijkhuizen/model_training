@@ -35,16 +35,16 @@ dir_models = path + '/models/'
 dir_results = path + '/results/'
 
 # Experiment name and configs
-exp = 'Experiment1'
+exp = 'Experiment3'
 # configs = ['dwa1','dwa2','teb1','teb2']
-configs = ['teb1']
+configs = ['dwa1']
 
 d_topics = ['density1','narrowness1']
 
-xtopics = ['density1','d_density1','narrowness1','d_narrowness1']
+xtopics = ['density1','d_density1','narrowness1','d_narrowness1','performance1']
 # xtopics = ['density1','d_density1']
-ytopic = 'safety2'
-# ytopic = 'performance2_3'
+# ytopic = 'safety2'
+ytopic = 'performance2_3'
 
 # Resamplesize and smoothing (rolling)
 samplesize = 10
@@ -60,22 +60,35 @@ groups = dict()
 X_shift = dict()
 y_shift = dict()
 groups_shift = dict()
+X_shift2 = dict()
+y_shift2 = dict()
+groups_shift2 = dict()
+lags = dict()
+mean_lags = dict()
 for config in configs:
     df[config] = dict()
 
     files[config] = sorted(glob.glob("%s*%s.bag"%(exp,config)))
-    for idx in range(len(files[config])):
+    lags[config] = []
+    n_exp = len(files[configs[0]])
+    n_exp = 10
+
+    for idx in range(n_exp):
         df[config][idx] = import_bag(files[config][idx],samplesize,rolling)
         df[config][idx] = add_derivs(df[config][idx],d_topics)
 
-        df[config][idx] = df[config][idx].iloc[(4000/samplesize):]
+        df[config][idx] = df[config][idx].iloc[(int(4000/samplesize)):]
 
-        lags_ms = determine_lags(df[config][idx],xtopics,ytopic,samplesize)
-        print(lags_ms)
-        df_shift = shift_lags(df[config][idx],xtopics,lags_ms)
+        lags[config].append(determine_lags(df[config][idx],xtopics,ytopic,samplesize))
+        print(lags[config][-1])
+        # df_shift = shift_lags(df[config][idx],xtopics,lags[config])
+        # df_shift1 = shift_lags(df[config][idx],xtopics,-1*lags[config])
+    mean_lags[config] = np.array(lags[config]).mean(axis=0).astype(int)
+    print(np.array(lags[config]).mean(axis=0).astype(int))
+    print(np.median(np.array(lags[config]), axis=0))
 
-
-
+    for idx in range(n_exp):
+        df_shift = shift_lags(df[config][idx],xtopics,mean_lags[config])
         if idx == 0:
             # Unshifted
             X[config] = df[config][idx][xtopics].values
@@ -98,22 +111,22 @@ for config in configs:
     print(len(X_shift[config]))
         # print(df[config][idx][xtopics].head())
 
-n_exp = len(files[configs[0]])
+
 
 # Print all the files with idx
 print('idx   File')
-for idx in range(len(files[configs[0]])):
+for idx in range(n_exp):
     print('%-5s %-s'%(idx, files[configs[0]][idx]))
 
 # Plot example of signals
 idx = 0
-for config in configs[0:]:
+for config in configs:
     topics = [[df[config][idx]['safety2'],df[config][idx]['performance2_3']],[df[config][idx]['narrowness1'],df[config][idx]['density1']]]
     titles = ['Experiment with config = %s'%(config),'Quality Attributes','Environment metrics']
     xlabel = 'Time [s]'
     ylabel = ['Quality Attributes','Environment Metrics']
     fig = graph21(topics, titles, xlabel, ylabel)
-plt.show()
+plt.show(block=False)
 
 m = dict()
 models = ['RF']
@@ -164,48 +177,71 @@ for config in configs:
     for modelname in models:
         # for idx in range(n_exp):
         gkf = GroupKFold(n_splits=n_exp)
-        idm = 0
+        
         # fig, ax = plt.subplots():
-        for train, test in gkf.split(X[config], y[config], groups=groups[config]):
-            # if idx == 5 and config == 'teb1' and modelname == 'SVR_poly':
-            #     # I dont know why, but the script gets stuck with this combination. so skip it
-            #     break
 
-            # Fit model
-            m[modelname].fit(X[config][train],y[config][train])
-            # Score 
-            r2score = m[modelname].score(X[config][test],y[config][test])
-            r2score_own = m[modelname].score(X[config][train],y[config][train])
-            
-            # print('$%s_model= %s, idx=%s, own score = %s, average score = %s'%(ytopic,modelname,idx,round(r2score[modelname][idx][idx],4),round(np.average(r2score[modelname][idx]),4)))
-            # Save model
-            pkl_filename = dir_models + "%s_%s_%s_kfold%s.pkl"%(ytopic,modelname,config,idm)
-            with open(pkl_filename, 'wb') as file:
-                pickle.dump(m[modelname], file)
-
-            print('idm:%s, modelname:%s test score:%s, own score:%s'%(idm,modelname,round(r2score,5),round(r2score_own,5)))
-            idm += 1
-        print('Shifted')
         # Shifted
+        print("Shifted")
+        idm = 0
+        best_score = -10
         for train, test in gkf.split(X_shift[config], y_shift[config], groups=groups_shift[config]):
-            # if idx == 5 and config == 'teb1' and modelname == 'SVR_poly':
-            #     # I dont know why, but the script gets stuck with this combination. so skip it
-            #     break
-
             # Fit model
             m[modelname].fit(X_shift[config][train],y_shift[config][train])
             # Score 
             r2score = m[modelname].score(X_shift[config][test],y_shift[config][test])
             r2score_own = m[modelname].score(X_shift[config][train],y_shift[config][train])
             
-            # print('$%s_model= %s, idx=%s, own score = %s, average score = %s'%(ytopic,modelname,idx,round(r2score[modelname][idx][idx],4),round(np.average(r2score[modelname][idx]),4)))
-            # Save model
-            pkl_filename = dir_models + "%s_%s_%s_kfold%s_shifted.pkl"%(ytopic,modelname,config,idm)
-            with open(pkl_filename, 'wb') as file:
-                pickle.dump(m[modelname], file)
+            if r2score > best_score:
+                best_filename = "%s_%s_%s_best.pkl"%(ytopic,modelname,config)
+                best_filepath = dir_models + best_filename
+                model_best = m[modelname]
+                best_score = r2score
+                
+            # pkl_filename = dir_models + "%s_%s_%s_kfold_shifted%s.pkl"%(ytopic,modelname,config,idm)
+            # with open(pkl_filename, 'wb') as file:
+            #     pickle.dump(m[modelname], file)
 
             print('idm:%s, modelname:%s test score:%s, own score:%s'%(idm,modelname,round(r2score,5),round(r2score_own,5)))
             idm += 1
+
+        print('Best model: %s'%best_filename)
+        with open(best_filepath, 'wb') as file:
+            pickle.dump(model_best, file)
+
+
+        # idm = 0   
+        # best_score = -10
+        # print("Not shifted")     
+        # for train, test in gkf.split(X[config], y[config], groups=groups[config]):
+        #     # if idx == 5 and config == 'teb1' and modelname == 'SVR_poly':
+        #     #     # I dont know why, but the script gets stuck with this combination. so skip it
+        #     #     break
+
+        #     # Fit model
+        #     m[modelname].fit(X[config][train],y[config][train])
+        #     # Score 
+        #     r2score = m[modelname].score(X[config][test],y[config][test])
+        #     r2score_own = m[modelname].score(X[config][train],y[config][train])
+            
+        #     # print('$%s_model= %s, idx=%s, own score = %s, average score = %s'%(ytopic,modelname,idx,round(r2score[modelname][idx][idx],4),round(np.average(r2score[modelname][idx]),4)))
+        #     # Save model
+        #     if r2score > best_score:
+        #         best_filename = dir_models + "%s_%s_%s_kfold%s_shifted.pkl"%(ytopic,modelname,config,idm)
+        #         model_best = m[modelname]
+        #         best_score = r2score
+        #         print('New best score!')
+            
+        #     pkl_filename = dir_models + "%s_%s_%s_kfold%s.pkl"%(ytopic,modelname,config,idm)
+        #     with open(pkl_filename, 'wb') as file:
+        #         pickle.dump(m[modelname], file)
+
+        #     print('idm:%s, modelname:%s test score:%s, own score:%s'%(idm,modelname,round(r2score,5),round(r2score_own,5)))
+        #     idm += 1
+
+        # with open(best_filename, 'wb') as file:
+        #     pickle.dump(model_best, file)
+
+
             # # Parameters to results sheets
             # # column names, only on top
             # if idx == 0:

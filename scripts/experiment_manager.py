@@ -24,10 +24,11 @@ n_shelf = 2
 l = 7*n_shelf
 
 obs_dense = [0.20]
-runs = 10
+runs = 40
+run0 = 0
 tries_max = 2
 d_min = [1.4, 1.4]
-sx = 1
+sx = 100
 # n_max = int(max(w)*l*max(obs_dense))
 # Initial pose
 x0 = 0
@@ -46,7 +47,7 @@ print(goal)
 
 
 # Experiment name
-exp = 'Experiment1'
+exp = 'Experiment6'
 
 # Launch class
 package = 'simulation_tests'
@@ -56,6 +57,7 @@ robot = 'boxer'
 files.append(['spawn_boxer.launch', 'x:=%s'%x0_r, 'y:=%s'%y0, 'yaw:=%s'%yaw0])
 # Configurations
 configs = ['dwa1','dwa2','teb1','teb2']
+# configs = ['dwa1','teb1']
 files.append(['navigation_dwa1.launch'])
 files.append(['navigation_dwa2.launch'])
 files.append(['navigation_teb1.launch'])
@@ -91,6 +93,7 @@ if __name__ == '__main__':
 	# Launch robot
 	# robot_launch = launch.run(robot)
 	# robot_launch.start()
+	delete_robot_client_("/")
 
 	# Observers launch
 	observer_launch = launch.run(observers)
@@ -116,9 +119,9 @@ if __name__ == '__main__':
 	listener = tf2_ros.TransformListener(tfBuffer)
 
 	# Simulation
-	for run in range(runs): 
+	for run in range(run0,runs,1): 
 	# for run in [3,4,5]:
-		pub.publish('run=%s, Seed=%s'%(run,sx))
+		pub.publish('run=%s/%s, Seed=%s'%(run,(runs-1),sx))
 		nstart = 0
 		nstart_c = 10
 		xstart = x0

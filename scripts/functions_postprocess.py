@@ -33,28 +33,6 @@ def add_derivs(df,topics):
         df['d_%s'%topic] = np.gradient(df[topic].values)/(df.index[1].total_seconds())
     return df
 
-def determine_lags(df1,topics_shift,topic_ref,samplesize):
-    ms = 800
-    n = 800/samplesize
-    lags = range(-int(n),int(n),1)
-
-    lag_n = []
-    for topic_shift in topics_shift:
-        rs = [abs(crosscorr(df1[topic_shift],df1[topic_ref], lag)) for lag in lags]
-        rs_abs =  [abs(rsi) for rsi in rs] 
-        lag_n.append(np.argmax(rs_abs) - n)
-        print('For topic_shift: %s, Max rs = %s, at lag = %s'%(topic_shift,max(rs, key=abs),samplesize*lag_n[-1]))
-    
-    return lag_n
-
-def shift_lags(df,topics_shift,lag_n):
-    # Make a copy so the original will not be modified
-    df1 = df.copy()
-
-    for idx in range(len(lag_n)):
-        df1[topics_shift[idx]] = df1[topics_shift[idx]].shift(lag_n[idx])
-    df1 = df1.dropna()
-    return df1
 
 def graph(dfs, title, xlabel, ylabel):
     fig, ax = plt.subplots()
@@ -110,7 +88,7 @@ def graph22(x,y,dfs, titles, xlabels, ylabels, fig):
     return fig
     # fig.savefig(resultsfolder + titles[0] + '.png')
 
-def graph_xcorr(df1,df2,title):
+def graph_xcorr(df1,df2,samplesize,title='Cross correlation'):
     fig = plt.figure()#figsize=(10, 10))
     ax = fig.add_subplot(2,1,1)
     ax.plot(df1.index.total_seconds(),df1.values,label=df1.name)
@@ -121,19 +99,22 @@ def graph_xcorr(df1,df2,title):
     ax.set_ylabel('Signals')
     ax.set_title(title)
 
-    ms = 3000
-    step = 25
-    lags = range(-int(ms),int(ms),step)
+    ms = 1500
+    n = ms/samplesize
+    lags = range(-int(n),int(n),1)
+    lags_ms = np.array(range(-int(n),int(n),1))*samplesize
     rs = [crosscorr(df1,df2, lag) for lag in lags]
+    # rs = [crosscorr(df1[topic_shift],df1[topic_ref], lag) for lag in lags]
+        
     ax = fig.add_subplot(2,1,2)
-    ax.plot(lags,rs)
-    ax.set_title('Cross correlation')
+    ax.plot(lags_ms,rs)
+    ax.set_title(title)
     ax.set_xlabel('lag [ms]')
     ax.set_ylabel('Correlation r')
     plt.tight_layout()
     # plt.subplots_adjust(top=0.85,bottom=0.12)
 
-    print(max(rs, key=abs))
+    # print(max(rs, key=abs),lags[rs.index(max(rs, key=abs))])
 
     return fig
     # fig.savefig(resultsfolder + title + '.png')
@@ -145,3 +126,54 @@ def crosscorr(datax, datay, lag=0, wrap=False):
         return datax.corr(shiftedy)
     else: 
         return datax.corr(datay.shift(lag))
+
+
+def determine_lags(df1,topics_shift,topic_ref,samplesize):
+    ms = 1500
+    n = ms/samplesize
+    if topic_ref == 'performance2_3':
+        lags = range(0,int(n),1)
+    else:
+        lags = range(-int(n),int(n),1)
+
+    lag_n = []
+    for topic_shift in topics_shift:
+        rs = [crosscorr(df1[topic_ref],df1[topic_shift], lag) for lag in lags]
+        if topic_shift == 'd_narrowness1':
+            lag_n.append(lags[rs.index(max(rs))])
+        else:
+            lag_n.append(lags[rs.index(max(rs, key=abs))])
+        # print('For topic_shift: %s, Max rs = %s, at lag = %s'%(topic_shift,max(rs, key=abs),samplesize*lag_n[-1]))
+    
+    return lag_n
+
+def corrs_lags(df1,topics_shift,topic_ref,samplesize):
+    ms = 1500
+    n = ms/samplesize
+    if topic_ref == 'performance2_2':
+        lags = range(0,int(n),1)
+    else:
+        lags = range(-int(n),int(n),1)
+
+    lag_n = []
+    rs_max = []
+    for topic_shift in topics_shift:
+        rs = [crosscorr(df1[topic_ref],df1[topic_shift], lag) for lag in lags]
+        if topic_shift == 'd_narrowness1':
+            rs_max.append(round(max(rs),2))
+            lag_n.append(lags[rs.index(max(rs))])
+        else:
+            rs_max.append(round(max(rs, key=abs),4))
+            lag_n.append(lags[rs.index(max(rs, key=abs))])
+        # print('For topic_shift: %s, Max rs = %s, at lag = %s'%(topic_shift,max(rs, key=abs),samplesize*lag_n[-1]))
+    
+    return rs_max, lag_n
+
+def shift_lags(df,topics_shift,lag_n):
+    # Make a copy so the original will not be modified
+    df1 = df.copy()
+
+    for idx in range(len(lag_n)):
+        df1[topics_shift[idx]] = df1[topics_shift[idx]].shift(lag_n[idx])
+    df1 = df1.dropna()
+    return df1
