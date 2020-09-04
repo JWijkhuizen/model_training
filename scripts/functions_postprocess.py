@@ -14,6 +14,7 @@ def import_bag(file, samplesize, rolling, bag_topics=None, print_head=False):
     df = rosbag_pandas.bag_to_dataframe(file, include=bag_topics)
     df.index -= df.index[0]
     df.index = pd.to_timedelta(df.index, unit='s')
+    # print(df.columns)
     topics = [topic.replace('/metrics/','').replace('/data','') for topic in list(df.columns)]
     df.columns = topics
 
