@@ -24,7 +24,7 @@ n_shelf = 2
 l = 7*n_shelf
 
 obs_dense = [0.20]
-runs = 40
+runs = 15
 run0 = 0
 tries_max = 2
 d_min = [1.4, 1.4]
@@ -47,26 +47,28 @@ print(goal)
 
 
 # Experiment name
-exp = 'Experiment6'
+exp = 'Experiment7'
 
 # Launch class
 package = 'simulation_tests'
 files =[]
 # Robot name
 robot = 'boxer'
-files.append(['spawn_boxer.launch', 'x:=%s'%x0_r, 'y:=%s'%y0, 'yaw:=%s'%yaw0])
+# files.append(['spawn_boxer.launch', 'x:=%s'%x0_r, 'y:=%s'%y0, 'yaw:=%s'%yaw0])
 # Configurations
-configs = ['dwa1','dwa2','teb1','teb2']
+configs = ['dwa1','dwa2','teb1']
 # configs = ['dwa1','teb1']
 files.append(['navigation_dwa1.launch'])
 files.append(['navigation_dwa2.launch'])
 files.append(['navigation_teb1.launch'])
-files.append(['navigation_teb2.launch'])
+# files.append(['navigation_teb2.launch'])
 # Observers
 observers = 'observers'
-files.append(['observers.launch'])
+# files.append(['observers.launch'])
 # Puth everything in the launch class
-launch = launch_class(package, [robot]+configs+[observers], files)
+launch_robot = launch_class(package, [robot], [['spawn_boxer.launch', 'x:=%s'%x0_r, 'y:=%s'%y0, 'yaw:=%s'%yaw0]])
+launch_movebase = launch_class(package, configs, files)
+launch_observers = launch_class(package, [observers], [['observers.launch']])
 
 pub = rospy.Publisher('/metrics/log', String, queue_size=10)
 pub2 = rospy.Publisher('/metrics/time', Float64, queue_size=10)
@@ -90,13 +92,11 @@ if __name__ == '__main__':
 	rospy.Subscriber("/move_base/status", GoalStatusArray, status_callback)
 	pub.publish('Experiment start')
 
-	# Launch robot
-	# robot_launch = launch.run(robot)
-	# robot_launch.start()
+	# Delete robot is present
 	delete_robot_client_("/")
 
 	# Observers launch
-	observer_launch = launch.run(observers)
+	observer_launch = launch_observers.run(observers)
 	observer_launch.start()
 
 	# Spawn init shelves and obstacles
@@ -120,7 +120,6 @@ if __name__ == '__main__':
 
 	# Simulation
 	for run in range(run0,runs,1): 
-	# for run in [3,4,5]:
 		pub.publish('run=%s/%s, Seed=%s'%(run,(runs-1),sx))
 		nstart = 0
 		nstart_c = 10
@@ -139,31 +138,28 @@ if __name__ == '__main__':
 			idx+=1
 		
 		for config in configs:
-		# for config in ['teb1']:
 			for tries in range(tries_max):
 				arrive = False
 				fail = False
 
 				# Reset robot and goal
-				robot_launch = launch.run(robot)
+				robot_launch = launch_robot.run(robot)
 				robot_launch.start()
 				rospy.sleep(1)
 
 				# Load and launch config
-				config_launch = launch.run(config)
+				config_launch = launch_movebase.run(config)
 				config_launch.start()
 				rospy.sleep(1)
 
-				# goal = compute_new_goal(xg_r,yg,yawg,tfBuffer)
-
 				# Bag
-				rosbagnode = roslaunch.core.Node("rosbag", "record", name="record", args='-e "/metrics/.*" -O $(find model_training)/bags/%s_%s_%s.bag'%(exp,run,config))
-				launchbag = roslaunch.scriptapi.ROSLaunch()
-				try:
-					launchbag.start()
-					process = launchbag.launch(rosbagnode)
-				except:
-					pub.publish('error with bag')
+				# rosbagnode = roslaunch.core.Node("rosbag", "record", name="record", args='-e "/metrics/.*" -O $(find model_training)/bags/%s_%s_%s.bag'%(exp,run,config))
+				# launchbag = roslaunch.scriptapi.ROSLaunch()
+				# try:
+				# 	launchbag.start()
+				# 	process = launchbag.launch(rosbagnode)
+				# except:
+				# 	pub.publish('error with bag')
 
 				# Run SimpleActionClient, needed for publishing goals
 				client = actionlib.SimpleActionClient('move_base', move.MoveBaseAction)
@@ -186,7 +182,7 @@ if __name__ == '__main__':
 				pub2.publish(duration)
 
 				# Kill things
-				process.stop()
+				# process.stop()
 				config_launch.shutdown()
 				robot_launch.shutdown()
 				delete_robot_client_("/")

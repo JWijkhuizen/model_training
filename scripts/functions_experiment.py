@@ -144,7 +144,7 @@ def check_arrived(listener,goal,goal_tol):
   x = goal.target_pose.pose.position.x
   y = goal.target_pose.pose.position.y
   if math.sqrt(pow(x-trans.transform.translation.x,2)+pow(y-trans.transform.translation.y,2)) < goal_tol:
-    print ("Arrived!!!")
+    print("Arrived!!!")
     return True
   else:
   	# print("Not there yet")
