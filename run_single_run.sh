@@ -20,26 +20,34 @@ source config.sh
 export METACONTROL_WS_PATH
 export REASONER_WS_PATH
 export PYTHON3_VENV_PATH
+export MODEL_TRAINING_PATH
+export SIMULATION_TESTS_PATH
 
 ####
 #  Default values, set if no parameters are given
 ####
 
-## Define initial navigation profile
-# Possible values ("fast" "standard" "safe")
-# also any of the fx_vX_rX metacontrol configurations
-declare config="dwa_v1_a0_b0"
+# declare -a configs=("dwa1" "dwa2" "teb1" "teb2")
+declare -a configs=("teb_v0_a0_b0" "teb_v1_a0_b0" "dwa_v0_a0_b0" "dwa_v1_a0_b0")
 
-## Define initial position
-# Possible values (1, 2, 3)
-declare init_pos_x=0
-declare init_pos_y=0
+declare -a ws=(4 3)
+declare -a Cs=(4 8)
+declare l=21
 
+declare n_max=0
+declare n=0
+for w in "${ws[@]}" ; do
+	for C in "${Cs[@]}" ; do
+		n=$(( w*l/C ))
+		((n > n_max)) && n_max=$n
+	done
+done
 
-## Define goal position
-# Possible values (1, 2, 3)
-declare goal_pos_x=31
-declare goal_pos_y=0
+declare exp="n1"
+declare sx=1
+declare x_goal=28
+
+declare record=1
 
 if [ "$1" == "-h" ]
 then
@@ -133,16 +141,76 @@ gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $SIMULATION_WS
 roslaunch simulation_tests world.launch;
 exit"
 
-echo "Launching: Spawn boxer"
-gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $SIMULATION_WS_PATH/devel/setup.bash;
-roslaunch simulation_tests spawn_boxer.launch;
-exit"
-
 echo "Spawn corridor and obstacles"
-gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $SIMULATION_WS_PATH/devel/setup.bash;
-rosrun model_training spawn_obstacles 4 14 0.25 1;
+bash -c "
+cd $MODEL_TRAINING_PATH/scripts;
+./simrun_init_environment.py ${ws[0]} $l $n_max;
+exit;"
+
+echo "Launch and load observers"
+gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $METACONTROL_WS_PATH/devel/setup.bash;
+rosrun rosgraph_monitor monitor;
 exit"
 
+sleep 1
+
+bash -c  "
+rosservice call /load_observer \"name: 'SafetyObserverTrain'\";
+rosservice call /load_observer \"name: 'NarrownessObserverTrain'\";
+rosservice call /load_observer \"name: 'ObstacleDensityObserverTrain'\";
+exit;"
+
+for w in "${ws[@]}" ; do
+	for C in "${Cs[@]}" ; do
+		for run in 0 1 2 3 4 5 6 7 8 9 10 ; do
+			echo "Environment width = ${w}, C = ${C}, run = ${run}"
+			bash -c "
+			cd $MODEL_TRAINING_PATH/scripts;
+			./simrun_move_environment.py $w $l $C $sx $n_max;
+			exit;"
+			for config in ${configs[@]} ; do
+				# echo "Launching: Spawn boxer"
+				gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $SIMULATION_WS_PATH/devel/setup.bash;
+				roslaunch simulation_tests spawn_boxer.launch;
+				exit"
+
+				# echo "Launching: move_base"
+				echo "Configuration: $config"
+				gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $METACONTROL_WS_PATH/devel/setup.bash;
+				roslaunch $config $config.launch;
+				exit"
+
+				# Rosbag
+				if [ $record -eq 1 ] ; then
+					gnome-terminal --window --geometry=80x24+10+10 -- bash -c  "
+					cd $MODEL_TRAINING_PATH/bags;
+					rosbag record -e '/metrics/.*' -O exp${exp}_c${config}_w${w}_C${C}_r${run}.bag;
+					exit;"
+				fi
+
+				# echo "Start navigation manager"
+				bash -c "
+				cd $MODEL_TRAINING_PATH/scripts;
+				./navigation_manager.py $x_goal 0 0;
+				exit;"
+
+				# Stop record node
+				gnome-terminal --window --geometry=80x24+10+10 -- bash -c "rosnode list | grep record* | xargs rosnode kill; exit;"
+
+				# echo "Kill robot and move_base"
+				gnome-terminal --window --geometry=80x24+10+10 -- bash -c "
+				rosnode kill move_base slam_gmapping ekf_localization robot_state_publisher controller_spawner;
+				rosservice call gazebo/delete_model '{model_name: /}';
+				exit"
+
+				sleep 1
+			done
+			sx=$((sx+1))
+		done
+	done
+done
+
+echo "Experiments finished!!"
 # echo "Running log and stop simulation node"
 # bash -ic "source $METACONTROL_WS_PATH/devel/setup.bash;
 # roslaunch metacontrol_experiments stop_simulation.launch obstacles:=$obstacles goal_nr:=$goal_position increase_power:=$increase_power record_bags:=$record_rosbags;
@@ -150,6 +218,6 @@ exit"
 # echo "Simulation Finished!!"
 
 # Check that there are not running ros nodes
-# kill_running_ros_nodes
+kill_running_ros_nodes
 # Wait for gazebo to end
 # wait_for_gzserver_to_end
