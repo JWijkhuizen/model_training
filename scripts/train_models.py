@@ -36,8 +36,7 @@ dir_results = path + '/results/'
 
 # Experiment name and configs
 exp = 'Experiment1'
-# configs = ['dwa1','dwa2','teb1','teb2']
-configs = ['teb1']
+configs = ['dwa1','dwa2','teb1','teb2']
 
 d_topics = ['density1','narrowness1']
 

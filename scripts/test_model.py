@@ -31,15 +31,16 @@ from functions_postprocess import *
 # Paths
 rospack = rospkg.RosPack()
 path = rospack.get_path('model_training')
+path_st = rospack.get_path('simulation_tests')
 dir_bags = path + '/bags'
 dir_figs = path + '/figures/'
 dir_models = path + '/models/'
 dir_results = path + '/results/'
 
 # Experiment name and configs
-exp = 'Experiment5'
+exp = 'test'
 # configs = ['dwa1','dwa2','teb1','teb2']
-configs = ['teb1']
+configs = ['cdwa_v0_a0_b0']
 
 d_topics = ['density1','narrowness1']
 
@@ -48,7 +49,7 @@ xtopics = ['density1','d_density1','narrowness1','d_narrowness1','performance1']
 # ytopic = 'safety2'
 ytopic = 'performance2_2'
 
-model = 'performance2_2_SVR_rbf_teb1_best.pkl'
+model = 'performance4_RF_cdwa_v0_a0_b0_best.pkl'
 lags = [23, -26, -20,  -2,  73]
 
 # Resamplesize and smoothing (rolling)

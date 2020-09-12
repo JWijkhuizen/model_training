@@ -17,7 +17,7 @@ def import_bag(file, samplesize, rolling, bag_topics=None, print_head=False):
     # print(df.columns)
     topics = [topic.replace('/metrics/','').replace('/data','') for topic in list(df.columns)]
     df.columns = topics
-    print(topics)
+    # print(topics)
 
     df = df.groupby(level=0).mean()
     # print('Amount of data points before resampling = %s'%len(df))
