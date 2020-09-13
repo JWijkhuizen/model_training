@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 from openpyxl import Workbook
 import pandas as pd
 import numpy as np
+import os
+import glob
 
 
 def import_bag(file, samplesize, rolling, bag_topics=None, print_head=False):
@@ -20,15 +22,107 @@ def import_bag(file, samplesize, rolling, bag_topics=None, print_head=False):
     # print(topics)
 
     df = df.groupby(level=0).mean()
-    # print('Amount of data points before resampling = %s'%len(df))
     df = df.resample('%sms'%samplesize).mean()
-    # print('Amount of data points after resampling = %s'%len(df))
     df = df.interpolate(method='linear',limit_direction='both')
     df = df.rolling(rolling, min_periods=1).mean()
 
     if print_head:
         print(df.head())
     return df
+
+def check_shittyness(df,xtopics,ytopic,configs,n,samplesize):
+    for config in configs:
+        lags_m = dict()
+        lags = []
+        for idx in range(n):
+            lags_temp = determine_lags(df[config][idx],xtopics,ytopic,samplesize)
+            lags.append(lags_temp)
+            lags_m[idx] = lags_temp
+        mean_lags = np.array(lags).mean(axis=0).astype(int)
+        for idx in range(n):
+            print("Run %s"%idx)
+            for ide in range(4):
+                print(mean_lags[ide]-lags_m[idx][ide])
+
+
+def generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling):
+    os.chdir(dir_bags)
+    files = dict()
+    df = dict()
+    X = dict()
+    y = dict()
+    groups = dict()
+    n_exp = dict()
+    for config in configs:
+        df[config] = dict()
+
+        files[config] = sorted(glob.glob("%s_%s*.bag"%(exp,config)))
+
+        for idx in range(len(files[config])):
+            df[config][idx] = import_bag(files[config][idx],samplesize,rolling)
+            df[config][idx] = add_derivs(df[config][idx],d_topics)
+
+            # Start and end time:
+            df[config][idx].drop(df[config][idx].head(int(start_ms/samplesize)).index,inplace=True)
+            df[config][idx].drop(df[config][idx].tail(int(end_ms/samplesize)).index,inplace=True) # drop last n rows
+        # n = len(files[config])
+        # check_shittyness(df,xtopics,ytopic,configs,n,samplesize)
+
+        # All the data in one set
+        for idx in range(len(files[config])):
+            n_group = files[config][idx][-5]    # Group number is the run number
+            # print(n_group)
+            if idx == 0:
+                X[config] = df[config][idx][xtopics].values
+                y[config] = df[config][idx][ytopic].values
+                groups[config] = np.full(len(X[config]),n_group)
+            else:
+                X[config] = np.concatenate((X[config], df[config][idx][xtopics].values))
+                y[config] = np.concatenate((y[config], df[config][idx][ytopic].values))
+                groups[config] = np.concatenate((groups[config], np.full(len(df[config][idx][ytopic].values),n_group)))
+    return X, y, groups
+
+def generate_dataset_shifted(configs,xtopics,ytopic,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling):
+    os.chdir(dir_bags)
+    files = dict()
+    df = dict()
+    X_shift = dict()
+    y_shift = dict()
+    groups_shift = dict()
+    lags = dict()
+    mean_lags = dict()
+    n_exp = dict()
+    for config in configs:
+        df[config] = dict()
+        files[config] = sorted(glob.glob("%s_%s*.bag"%(exp,config)))
+        lags[config] = []
+        for idx in range(len(files[config])):
+            # Import bags
+            df[config][idx] = import_bag(files[config][idx],samplesize,rolling)
+            df[config][idx] = add_derivs(df[config][idx],d_topics)
+            # Start and end time:
+            df[config][idx].drop(df[config][idx].head(int(start_ms/samplesize)).index,inplace=True)
+            df[config][idx].drop(df[config][idx].tail(int(end_ms/samplesize)).index,inplace=True) # drop last n rows
+            # Lags
+            lags[config].append(determine_lags(df[config][idx],xtopics,ytopic,samplesize))
+        # Determine mean lags for shift
+        mean_lags[config] = np.array(lags[config]).mean(axis=0).astype(int)
+
+        # All the data in one set
+        for idx in range(len(files[config])):
+            df_shift = shift_lags(df[config][idx],xtopics,mean_lags[config])
+            n_group = files[config][idx][-5]    # Group number is the run number
+            if idx == 0:
+                # Shifted
+                X_shift[config] = df_shift[xtopics].values
+                y_shift[config] = df_shift[ytopic].values
+                groups_shift[config] = np.full(len(df_shift[ytopic].values),n_group)
+            else:
+                X_shift[config] = np.concatenate((X_shift[config], df_shift[xtopics].values))
+                y_shift[config] = np.concatenate((y_shift[config], df_shift[ytopic].values))
+                groups_shift[config] = np.concatenate((groups_shift[config], np.full(len(df_shift[ytopic].values),n_group)))
+    return X_shift, y_shift, groups_shift
+
 
 def add_derivs(df,topics):
     for topic in topics:

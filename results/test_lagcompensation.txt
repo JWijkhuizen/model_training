@@ -1,0 +1,12 @@
+Training for cteb_v0_a0_b0
+Not shifted
+idm:0, modelname:Ridge test score:0.36608, own score:0.44471
+idm:1, modelname:Ridge test score:0.48765, own score:0.4135
+idm:2, modelname:Ridge test score:0.48385, own score:0.4239
+idm:3, modelname:Ridge test score:0.33016, own score:0.47891
+Shifted
+idm:0, modelname:Ridge test score:0.33686, own score:0.45467
+idm:1, modelname:Ridge test score:0.38607, own score:0.43584
+idm:2, modelname:Ridge test score:0.42197, own score:0.41116
+idm:3, modelname:Ridge test score:0.45293, own score:0.40459
+Best model: safety2_Ridge_cteb_v0_a0_b0_shifted_best.pkl

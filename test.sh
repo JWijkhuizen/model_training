@@ -112,12 +112,30 @@ kill_record () {
 
 echo "Test 1 2 3 .... Test 1 2 3 ....."
 
+declare fail=1
+bash -c "
+cd $MODEL_TRAINING_PATH/scripts;
+./simrun_test.py 1;
+exit;"
+fail=$?
+echo $fail
+while [ $fail -eq 1 ] ; do
+	echo $fail
+	bash -c "
+	cd $MODEL_TRAINING_PATH/scripts;
+	./simrun_test.py 0;
+	exit;"
+	fail=$?
+	echo $fail
+	sleep 1
+done
+
 
 # echo "Launching: move_base"
-echo "Configuration: $config"
-gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $METACONTROL_WS_PATH/devel/setup.bash;
-roslaunch $config $config.launch;
-read -rsn 1 -p 'Press any key to close this terminal...'"
+# echo "Configuration: $config"
+# gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $METACONTROL_WS_PATH/devel/setup.bash;
+# roslaunch $config $config.launch;
+# read -rsn 1 -p 'Press any key to close this terminal...'"
 
 # echo "Running log and stop simulation node"
 # bash -ic "source $METACONTROL_WS_PATH/devel/setup.bash;

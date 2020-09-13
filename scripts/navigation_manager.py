@@ -85,3 +85,10 @@ if __name__ == '__main__':
 		if rospy.get_time()-starttime > 60:
 			fail = True
 		rospy.sleep(0.2)
+
+	if fail:
+		exitcode=1
+	else:
+		exitcode=0
+
+	sys.exit(exitcode)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3.6
 
 # import rosbag
 import rospy
@@ -7,7 +7,7 @@ import os
 import glob
 import rosbag_pandas
 import matplotlib.pyplot as plt
-import statistics as stat
+# import statistics as stat
 from openpyxl import Workbook
 import pandas as pd
 import numpy as np
@@ -35,16 +35,17 @@ dir_models = path + '/models/'
 dir_results = path + '/results/'
 
 # Experiment name and configs
-exp = 'Experiment1'
-# configs = ['dwa1','dwa2','teb1','teb2']
-configs = ['teb1']
+exp = 'exp2'
+configs = ['cdwa_v0_a0_b0']
 
 d_topics = ['density1','narrowness1']
+xtopics = d_topics + ['d_%s'%d_topic for d_topic in d_topics]
+xtopics = xtopics + ['density1_f']
+ytopic = 'safety2'
 
-xtopics = ['density1','d_density1','narrowness1','d_narrowness1']
-# xtopics = ['density1','d_density1']
-# ytopic = 'safety2'
-ytopic = 'performance2_3'
+runs_id = [0,1,2]
+
+plottopics = ['density1','density1_f']
 
 # Resamplesize and smoothing (rolling)
 samplesize = 10
@@ -57,42 +58,31 @@ df = dict()
 X = dict()
 y = dict()
 groups = dict()
-X_shift = dict()
-y_shift = dict()
-groups_shift = dict()
-X_shift2 = dict()
-y_shift2 = dict()
-groups_shift2 = dict()
 lags = dict()
 mean_lags = dict()
 for config in configs:
     df[config] = dict()
 
-    files[config] = sorted(glob.glob("%s*%s.bag"%(exp,config)))
+    files[config] = sorted(glob.glob("%s_%s*.bag"%(exp,config)))
     lags[config] = []
-    for idx in range(len(files[config])):
-    # for idx in range(5):
-        df[config][idx] = import_bag(files[config][idx],samplesize,rolling)
-        df[config][idx] = add_derivs(df[config][idx],d_topics)
-
-        df[config][idx] = df[config][idx].iloc[(int(4000/samplesize)):]
+    # for idx in range(len(files[config])):
+    for idx in runs_id:
+        for plottopic in plottopics:
         
-        graph_xcorr(df[config][idx][ytopic],df[config][idx][xtopics[1]],samplesize)
+            df[config][idx] = import_bag(files[config][idx],samplesize,rolling)
+            df[config][idx] = add_derivs(df[config][idx],d_topics)
 
-        lags[config].append(determine_lags(df[config][idx],xtopics,ytopic,samplesize))
-        print(lags[config][-1])
-        # print(lags[config][-1])
+            df[config][idx].drop(df[config][idx].head(int(10000/samplesize)).index,inplace=True)
+            df[config][idx].drop(df[config][idx].tail(int(1000/samplesize)).index,inplace=True) # drop last n rows
+
+            graph_xcorr(df[config][idx][ytopic],df[config][idx][plottopic],samplesize,"idx:%s, topic:%s"%(idx,plottopic))
+
+            # lags_temp = determine_lags(df[config][idx],xtopics,ytopic,samplesize)
+            # lags[config].append(lags_temp)
+            # print(lags_temp)
+            # print(lags[config][-1])
+            # print(lags[config][-1])
         
-
-
-n_exp = len(files[configs[0]])
-
-# Print all the files with idx
-print('idx   File')
-for idx in range(len(files[configs[0]])):
-    print('%-5s %-s'%(idx, files[configs[0]][idx]))
-
-
 
 
 plt.show()
