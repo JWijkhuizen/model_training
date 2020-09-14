@@ -53,7 +53,10 @@ if __name__ == '__main__':
 		print('Not enough input arguments')
 
 	# rospack = RosPack()
-	rospy.sleep(6.0)
+	try:
+		rospy.sleep(6.0)
+	except:
+		sys.exit(2)
 
 	# Arguments
 	xg = float(sys.argv[1])

@@ -112,6 +112,10 @@ kill_record () {
 
 echo "Test 1 2 3 .... Test 1 2 3 ....."
 
+echo "start"
+timeout 2s bash -c "sleep 10"
+echo "stop"
+
 declare fail=1
 bash -c "
 cd $MODEL_TRAINING_PATH/scripts;

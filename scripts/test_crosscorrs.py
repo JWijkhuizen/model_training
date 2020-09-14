@@ -41,11 +41,11 @@ configs = ['cdwa_v0_a0_b0']
 d_topics = ['density1','narrowness1']
 xtopics = d_topics + ['d_%s'%d_topic for d_topic in d_topics]
 xtopics = xtopics + ['density1_f']
-ytopic = 'safety2'
+ytopic = 'performance3'
 
 runs_id = [0,1,2]
 
-plottopics = ['density1','density1_f']
+plottopics = ['density1','density2']
 
 # Resamplesize and smoothing (rolling)
 samplesize = 10

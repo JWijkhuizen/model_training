@@ -233,15 +233,18 @@ def determine_lags(df1,topics_shift,topic_ref,samplesize):
         lags = range(-int(n),int(n),1)
 
     lag_n = []
+    corrs = []
     for topic_shift in topics_shift:
         rs = [crosscorr(df1[topic_ref],df1[topic_shift], lag) for lag in lags]
         if topic_shift == 'd_narrowness1':
             lag_n.append(lags[rs.index(max(rs))])
+            corrs.append(max(rs))
         else:
             lag_n.append(lags[rs.index(max(rs, key=abs))])
+            corrs.append(max(rs, key=abs))
         # print('For topic_shift: %s, Max rs = %s, at lag = %s'%(topic_shift,max(rs, key=abs),samplesize*lag_n[-1]))
     
-    return lag_n
+    return corrs, lag_n
 
 def corrs_lags(df1,topics_shift,topic_ref,samplesize):
     ms = 1500

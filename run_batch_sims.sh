@@ -13,9 +13,9 @@ export SIMULATION_TESTS_PATH
 #  Default values, set if no parameters are given
 ####
 
-# declare -a configs=("dwa1" "dwa2" "teb1" "teb2")
+declare -a configs=("dwa1" "dwa2" "teb1" "teb2")
 # declare -a configs=("teb_v0_a0_b0" "teb_v1_a0_b0" "dwa_v0_a0_b0" "dwa_v1_a0_b0")
-declare -a configs=("dwa_v0_a0_b0" "teb_v0_a0_b0")
+# declare -a configs=("dwa_v0_a0_b0" "teb_v0_a0_b0")
 
 declare -a ws=(4 3)
 declare -a Cs=(8 4)
@@ -30,7 +30,7 @@ for w in "${ws[@]}" ; do
 	done
 done
 
-declare exp="2"
+declare exp="3"
 declare sx=100
 declare x_goal=26
 # declare -a runs = 
@@ -62,42 +62,57 @@ kill_running_ros_nodes () {
 	sleep 1
 }
 
+start_simulation () {
+	echo ""
+	echo "Start a new simulation"
+	echo ""
+	echo "Launch roscore"
+	gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $METACONTROL_WS_PATH/devel/setup.bash; roscore; exit"
+
+	sleep 3
+
+	echo "Launching: Simulation tests world.launch"
+	gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $SIMULATION_WS_PATH/devel/setup.bash;
+	roslaunch simulation_tests world.launch;
+	exit"
+
+	echo "Spawn corridor and obstacles"
+	bash -c "
+	cd $MODEL_TRAINING_PATH/scripts;
+	./simrun_init_environment.py ${ws[0]} $l $n_max;
+	exit;"
+
+	echo "Launch and load observers"
+	# gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $METACONTROL_WS_PATH/devel/setup.bash;
+	# rosrun rosgraph_monitor monitor;
+	# exit"
+	gnome-terminal --window --geometry=80x24+10+10 -- bash -c "
+	roslaunch simulation_tests observers.launch;
+	exit"	
+}
+restart_simulation () {
+	# Check that there are not running ros nodes
+	kill_running_ros_nodes
+	# If gazebo is running, it may take a while to end
+	wait_for_gzserver_to_end
+
+	start_simulation
+	
+	bash -c "
+	cd $MODEL_TRAINING_PATH/scripts;
+	./simrun_move_environment.py $w $l $C $sx $n_max;
+	exit;"
+}
 
 echo "Make sure there is no other gazebo instances or ROS nodes running:"
-
 # Check that there are not running ros nodes
 kill_running_ros_nodes
 # If gazebo is running, it may take a while to end
 wait_for_gzserver_to_end
 
-echo ""
-echo "Start a new simulation"
-echo ""
-echo "Launch roscore"
-gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $METACONTROL_WS_PATH/devel/setup.bash; roscore; exit"
+start_simulation
 
-sleep 3
 
-echo "Launching: Simulation tests world.launch"
-gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $SIMULATION_WS_PATH/devel/setup.bash;
-roslaunch simulation_tests world.launch;
-exit"
-
-echo "Spawn corridor and obstacles"
-bash -c "
-cd $MODEL_TRAINING_PATH/scripts;
-./simrun_init_environment.py ${ws[0]} $l $n_max;
-exit;"
-
-echo "Launch and load observers"
-# gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $METACONTROL_WS_PATH/devel/setup.bash;
-# rosrun rosgraph_monitor monitor;
-# exit"
-gnome-terminal --window --geometry=80x24+10+10 -- bash -c "
-roslaunch simulation_tests observers.launch;
-exit"
-
-sleep 1
 
 # bash -c  "
 # rosservice call /load_observer \"name: 'SafetyObserverTrain'\";
@@ -105,45 +120,69 @@ sleep 1
 # rosservice call /load_observer \"name: 'ObstacleDensityObserverTrain'\";
 # exit;"
 declare fail=0
+declare moved_obs=0
+
 for w in "${ws[@]}" ; do
+
+	sleep 1
 	for C in "${Cs[@]}" ; do
 		for run in 0 1 2 3 4 ; do
+			moved_obs=0
 			echo "Environment width = ${w}, C = ${C}, run = ${run}"
-			bash -c "
+			timeout 60s bash -c "
 			cd $MODEL_TRAINING_PATH/scripts;
 			./simrun_move_environment.py $w $l $C $sx $n_max;
 			exit;"
+			moved_obs=$?
+			if [ $moved_obs -eq 0 ]; then
+				echo "Failed to move obstacles, Restarting"
+				restart_simulation
+			fi 
+			echo "Finished moving environment"
 			for config in ${configs[@]} ; do
-				fail=1
-				while [ $fail -eq 1 ] ; do
+				fail=2
+				while [ $fail -gt 0 ] ; do
+					fail=2
 					# echo "Launching: Spawn boxer"
 					gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $SIMULATION_WS_PATH/devel/setup.bash;
 					roslaunch simulation_tests spawn_boxer.launch;
 					exit"
 
 					# echo "Launching: move_base"
+					# echo "Configuration: $config"
+					# gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $METACONTROL_WS_PATH/devel/setup.bash;
+					# roslaunch $config $config.launch;
+					# exit"
 					echo "Configuration: $config"
 					gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $METACONTROL_WS_PATH/devel/setup.bash;
-					roslaunch $config $config.launch;
+					roslaunch simulation_tests navigation_$config.launch;
 					exit"
 
 					# Rosbag
 					if [ $record -eq 1 ] ; then
-						gnome-terminal --window --geometry=80x24+10+10 -- bash -c  "
+						timeout 120s gnome-terminal --window --geometry=80x24+10+10 -- bash -c  "
+						echo 'Start record';
 						cd $MODEL_TRAINING_PATH/bags;
 						rosbag record -e '/metrics/.*' -O exp${exp}_c${config}_w${w}_C${C}_r${run}.bag;
 						exit;"
 					fi
 
 					# echo "Start navigation manager"
-					bash -c "
+					echo "Fail is ${fail}"
+					timeout 120s bash -c "
+					echo 'Starting navigation';
 					cd $MODEL_TRAINING_PATH/scripts;
 					./navigation_manager.py $x_goal 0 0;
 					exit;"
 					fail=$?
+					echo "Fail is ${fail}"
 					if [ $fail -eq 1 ]; then
 						echo "Failed run, try again"
 					fi
+					if [ $fail -gt 1 ]; then
+						echo "Failed navigation, Restarting"
+						restart_simulation
+					fi 
 
 
 					# Stop record node

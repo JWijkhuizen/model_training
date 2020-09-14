@@ -35,19 +35,20 @@ dir_models = path + '/models/'
 dir_results = path + '/results/'
 
 # Experiment name and configs
-exp = 'exp1'
-# configs = ['cdwa_v0_a0_b0','cteb_v0_a0_b0']
-configs = ['cdwa_v0_a0_b0']
+exp = 'exp2'
+configs = ['cdwa_v0_a0_b0','cteb_v0_a0_b0']
+# configs = ['cdwa_v0_a0_b0']
 
 # Topics
-d_topics = ['density4','narrowness1']
+d_topics = ['density1_f','narrowness1']
 # xtopics = d_topics + ['d_%s'%d_topic for d_topic in d_topics]
 # xtopics = d_topics + ['d_%s'%d_topic for d_topic in d_topics] + ['performance2']
-xtopics = ['density4','narrowness1','d_density4','performance2']
-ytopic = 'safety2'
+xtopics = ['density1_f','narrowness1','d_density1_f','performance2']
+ytopic = 'performance4'
 
 # Models
 models = ['SGD','ElasticNet','Lasso','Ridge','SVR_linear','SVR_rbf','SVR_poly','RF']
+polies = [1,2,3,4,5,6]
 
 # Resamplesize and smoothing (rolling)
 samplesize = 10
@@ -64,11 +65,8 @@ X, y, groups = generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags
 # Train loop
 os.chdir(dir_results)
 # sys.stdout=open("test_modeltypes.txt","w")
+lr = LinearRegression(normalize=True)
 for config in configs:
-    pf2 = PolynomialFeatures(degree=2)
-    Xp2 = pf2.fit_transform(X[config])
-    pf3 = PolynomialFeatures(degree=3)
-    Xp3 = pf3.fit_transform(X[config])
     print('Training for %s'%config)
     # Loop train models
     # for modelname in models:
@@ -91,22 +89,25 @@ for config in configs:
         # r2score = lr.score(Xp2[test],y[config][test])
         # r2score_own = lr.score(Xp2[train],y[config][train])
         # print('idm:%s, test score:%s, own score:%s, model: Polynomial2'%(idm,round(r2score,5),round(r2score_own,5)))
+        bestpolyscore = 0
+        bestpoly=0
+        for poly in polies:
+            pf = PolynomialFeatures(degree=poly)
+            Xp = pf.fit_transform(X[config])
+            lr.fit(Xp[train],y[config][train])
+            r2score = lr.score(Xp[test],y[config][test])
+            r2score_own = lr.score(Xp[train],y[config][train])
+            print('idm:%s, test score:%s, own score:%s, model poly:%s'%(idm,round(r2score,5),round(r2score_own,5),poly))
 
-        lr = LinearRegression(normalize=True)
-        lr.fit(Xp3[train],y[config][train])
-        r2score = lr.score(Xp3[test],y[config][test])
-        r2score_own = lr.score(Xp3[train],y[config][train])
-        print('idm:%s, test score:%s, own score:%s, model: Polynomial3'%(idm,round(r2score,5),round(r2score_own,5)))
-
-        if r2score > best_score:
-            best_filename = dir_models + "%s_Poly3_%s_best.pkl"%(ytopic,config)
-            model_best = lr
-            best_score = r2score
-
-        idm += 1
-        #     print('idm:%s, modelname:%s test score:%s, own score:%s'%(idm,modelname,round(r2score,5),round(r2score_own,5)))
-        #     idm += 1
-
+            if r2score > best_score:
+                best_filename = dir_models + "%s_Poly%s_%s_best.pkl"%(ytopic,poly,config)
+                model_best = lr
+                best_score = r2score
+            if r2score > bestpolyscore:
+                bestpolyscore=r2score
+                bestpoly = poly
+            idm += 1
+        print("Best poly = %s"%bestpoly)
     with open(best_filename, 'wb') as file:
         pickle.dump(model_best, file)
 

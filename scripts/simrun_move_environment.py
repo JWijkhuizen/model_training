@@ -150,3 +150,5 @@ if __name__ == '__main__':
 	move_shelves(w_cor,n_shelves,x0_shelves,n0)
 	# Move to random location
 	move_obstacles(w_cor,l_cor,C,d_min,sx,xstart,n0,n_max)
+
+	sys.exit(1)

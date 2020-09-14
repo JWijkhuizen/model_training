@@ -27,7 +27,7 @@ dir_results = path + '/results/'
 
 
 # Experiment name and configs
-exp = 'exp1'
+exp = 'exp2'
 # configs = ['dwa1','dwa2','teb1','teb2']
 configs = ['cdwa_v0_a0_b0']
 # configs = ['dwa1','dwa2']
@@ -35,7 +35,8 @@ configs = ['cdwa_v0_a0_b0']
 d_topics = ['density1','narrowness1']
 
 # xtopics = ['density4','d_density1','narrowness1','d_narrowness1']
-xtopics = d_topics + ['d_%s'%d_topic for d_topic in d_topics]
+# xtopics = d_topics + ['d_%s'%d_topic for d_topic in d_topics]
+xtopics = ['density1','density2','density3','density4','density1_f']
 ytopic = 'safety2'
 
 # Resamplesize and smoothing (rolling)
@@ -49,6 +50,7 @@ df = dict()
 lags = dict()
 lags_m = dict()
 mean_lags = dict()
+corrs = dict()
 
 for config in configs:
     df[config] = dict()
@@ -56,9 +58,10 @@ for config in configs:
     files[config] = sorted(glob.glob("%s_%s*.bag"%(exp,config)))
     # print(files[config])
     lags[config] = []
+    corrs[config] = dict()
     lags_m[config] = dict()
     ide = 0
-    for idx in range(10):
+    for idx in range(len(files[config])):
         df[config][ide] = import_bag(files[config][idx],samplesize,rolling)
         # if df[config][ide].index[-1].total_seconds() > 50:
         #     print("experiment %s failed, total time=%s"%(idx,df[config][ide].index[-1].total_seconds()))
@@ -69,8 +72,9 @@ for config in configs:
         df[config][idx].drop(df[config][idx].tail(int(1000/samplesize)).index,inplace=True) # drop last n rows
 
 
-        lags_temp = determine_lags(df[config][ide],xtopics,ytopic,samplesize)
+        corrs_temp, lags_temp = determine_lags(df[config][ide],xtopics,ytopic,samplesize)
         lags_temp = [element * samplesize for element in lags_temp]
+        corrs[config][idx] = corrs_temp
         # print(files[config][idx])
         print(lags_temp)
         lags[config].append(lags_temp)
@@ -89,10 +93,23 @@ ws = wb.active
 for config in configs:
     ws.append([config])
     ws.append(["","Lags for Environment metric [ms]"])
-    ws.append(["run","OD1","N1","d_OD1","d_N1"])
+    # ws.append(["run","OD1","N1","d_OD1","d_N1"])
+    ws.append(["run"]+xtopics)
 
     for idx in range(len(files[config])):
         ws.append([idx] + lags_m[config][idx] + [files[config][idx]])
     ws.append(["Mean"] + mean_lags[config].tolist())
+wb.save(filename = 'Lags_table.xlsx')
 
-# wb.save(filename = 'Lags_table.xlsx')
+wb = Workbook()
+ws = wb.active
+for config in configs:
+    ws.append([config])
+    ws.append(["","Lags for Environment metric [ms]"])
+    # ws.append(["run","OD1","N1","d_OD1","d_N1"])
+    ws.append(["run"]+xtopics)
+
+    for idx in range(len(files[config])):
+        ws.append([idx] + corrs[config][idx] + [files[config][idx]])
+    # ws.append(["Mean"] + mean_lags[config].tolist())
+wb.save(filename = 'Corrs_table.xlsx')
