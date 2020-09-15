@@ -104,8 +104,8 @@ def spawn_shelves(w,n,xstart,nstart):
 
 
 if __name__ == '__main__':
-	if len(sys.argv) != 4:
-		print('Not enough input arguments')
+	# if len(sys.argv) != 4:
+	# 	print('Not enough input arguments')
 		# break
 
 	# Initialize a ROS Node
@@ -117,17 +117,20 @@ if __name__ == '__main__':
 	w_cor = float(sys.argv[1])
 	l_cor = float(sys.argv[2])
 	n_max = int(sys.argv[3])
+	x0 = float(sys.argv[4])
+	n0 = int(sys.argv[5])
+	nextra = int(sys.argv[6])
 
 	# Dingen
-	n_shelves = int(l_cor / 7) + 2
-	x0 = 0
+	n_shelves = int(l_cor / 7) + nextra
+	# x0 = 0
 	xstart = x0 + 4
 	x0_shelves = xstart - 7
-	n0 = 0
+	# n0 = 0
 	d_min = 1.4
 
 	# Spawn init
 	# TODO check if last shelve already exists
-	spawn_shelves(w_cor,n_shelves,x0_shelves,0)
+	spawn_shelves(w_cor,n_shelves,x0_shelves,n0)
 	# TODO: check if last obs already exists
-	spawn_obstacles(n_max,xstart,0)
+	spawn_obstacles(n_max,xstart,n0)
