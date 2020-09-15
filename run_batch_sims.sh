@@ -13,8 +13,8 @@ export SIMULATION_TESTS_PATH
 #  Default values, set if no parameters are given
 ####
 
-declare -a configs=("dwa1" "dwa2" "teb1" "teb2")
-# declare -a configs=("teb_v0_a0_b0" "teb_v1_a0_b0" "dwa_v0_a0_b0" "dwa_v1_a0_b0")
+# declare -a configs=("dwa1" "dwa2" "teb1" "teb2")
+declare -a configs=("teb_v0_a0_b0" "teb_v1_a0_b0" "dwa_v0_a0_b0" "dwa_v1_a0_b0")
 # declare -a configs=("dwa_v0_a0_b0" "teb_v0_a0_b0")
 
 declare -a ws=(4 3)
@@ -30,7 +30,7 @@ for w in "${ws[@]}" ; do
 	done
 done
 
-declare exp="3"
+declare exp="4"
 declare sx=100
 declare x_goal=26
 # declare -a runs = 
@@ -150,13 +150,12 @@ for w in "${ws[@]}" ; do
 
 					# echo "Launching: move_base"
 					# echo "Configuration: $config"
-					# gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $METACONTROL_WS_PATH/devel/setup.bash;
-					# roslaunch $config $config.launch;
-					# exit"
-					echo "Configuration: $config"
 					gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $METACONTROL_WS_PATH/devel/setup.bash;
-					roslaunch simulation_tests navigation_$config.launch;
-					exit"
+					roslaunch $config $config.launch;
+					exit;"
+					# gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $METACONTROL_WS_PATH/devel/setup.bash;
+					# roslaunch simulation_tests navigation_$config.launch;
+					# exit"
 
 					# Rosbag
 					if [ $record -eq 1 ] ; then

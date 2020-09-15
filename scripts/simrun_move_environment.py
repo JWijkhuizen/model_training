@@ -136,9 +136,11 @@ if __name__ == '__main__':
 	C = float(sys.argv[3])
 	sx = int(sys.argv[4])
 	n_max = int(sys.argv[5])
-	x0 = float(sys.argv[6])
-	n0 = int(sys.argv[7])
-
+	# x0 = float(sys.argv[6])
+	# n0 = int(sys.argv[7])
+	x0 = 0
+	n0 = 0
+	
 	# Dingen
 	obs_n = int(w_cor*l_cor*C)
 	n_shelves = int(l_cor / 7) + 2

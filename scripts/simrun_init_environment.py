@@ -117,10 +117,14 @@ if __name__ == '__main__':
 	w_cor = float(sys.argv[1])
 	l_cor = float(sys.argv[2])
 	n_max = int(sys.argv[3])
-	x0 = float(sys.argv[4])
-	n0 = int(sys.argv[5])
-	nextra = int(sys.argv[6])
 
+	# x0 = float(sys.argv[4])
+	# n0 = int(sys.argv[5])
+	# nextra = int(sys.argv[6])
+	x0 = 0
+	n0 = 0
+	nextra = 2
+	
 	# Dingen
 	n_shelves = int(l_cor / 7) + nextra
 	# x0 = 0
