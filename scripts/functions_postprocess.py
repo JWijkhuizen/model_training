@@ -82,6 +82,39 @@ def generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,start_ms,e
                 groups[config] = np.concatenate((groups[config], np.full(len(df[config][idx][ytopic].values),n_group)))
     return X, y, groups
 
+def generate_dataset_all_selectedfiles(files,configs,xtopics,ytopic,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling):
+    os.chdir(dir_bags)
+    df = dict()
+    X = dict()
+    y = dict()
+    groups = dict()
+    n_exp = dict()
+    for config in configs:
+        df[config] = dict()
+        for idx in range(len(files[config])):
+            df[config][idx] = import_bag(files[config][idx],samplesize,rolling)
+            df[config][idx] = add_derivs(df[config][idx],d_topics)
+
+            # Start and end time:
+            df[config][idx].drop(df[config][idx].head(int(start_ms/samplesize)).index,inplace=True)
+            df[config][idx].drop(df[config][idx].tail(int(end_ms/samplesize)).index,inplace=True) # drop last n rows
+        # n = len(files[config])
+        # check_shittyness(df,xtopics,ytopic,configs,n,samplesize)
+
+        # All the data in one set
+        for idx in range(len(files[config])):
+            n_group = files[config][idx][-5]    # Group number is the run number
+            # print(n_group)
+            if idx == 0:
+                X[config] = df[config][idx][xtopics].values
+                y[config] = df[config][idx][ytopic].values
+                groups[config] = np.full(len(X[config]),n_group)
+            else:
+                X[config] = np.concatenate((X[config], df[config][idx][xtopics].values))
+                y[config] = np.concatenate((y[config], df[config][idx][ytopic].values))
+                groups[config] = np.concatenate((groups[config], np.full(len(df[config][idx][ytopic].values),n_group)))
+    return X, y, groups
+
 def generate_dataset_shifted(configs,xtopics,ytopic,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling):
     os.chdir(dir_bags)
     files = dict()
@@ -124,6 +157,28 @@ def generate_dataset_shifted(configs,xtopics,ytopic,d_topics,exp,dir_bags,start_
     return X_shift, y_shift, groups_shift
 
 
+def generate_dataset(configs,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling):
+    os.chdir(dir_bags)
+    files = dict()
+    df = dict()
+    X = dict()
+    y = dict()
+    groups = dict()
+    n_exp = dict()
+    for config in configs:
+        df[config] = dict()
+
+        files[config] = sorted(glob.glob("%s_%s*.bag"%(exp,config)))
+
+        for idx in range(len(files[config])):
+            df[config][idx] = import_bag(files[config][idx],samplesize,rolling)
+            df[config][idx] = add_derivs(df[config][idx],d_topics)
+
+            # Start and end time:
+            df[config][idx].drop(df[config][idx].head(int(start_ms/samplesize)).index,inplace=True)
+            df[config][idx].drop(df[config][idx].tail(int(end_ms/samplesize)).index,inplace=True) # drop last n rows
+    return files, df
+
 def add_derivs(df,topics):
     for topic in topics:
         df['d_%s'%topic] = np.gradient(df[topic].values)/(df.index[1].total_seconds())
@@ -162,7 +217,7 @@ def graph21(dfs, titles, xlabel, ylabels):
     axes[n-1].set_xlabel(xlabel)
     fig.tight_layout()
 
-    return fig
+    return fig, axes
     # fig.savefig(resultsfolder + title + '.png')
 
 def graph22(x,y,dfs, titles, xlabels, ylabels, fig):

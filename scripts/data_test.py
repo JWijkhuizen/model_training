@@ -68,15 +68,9 @@ labels['safety2'] = 'safety without limit at 1'
 # idc = 0
 # for idy in range(len(files)):
 print("Plotting")
-for idx in range(n):
-	
-	fig, ax = plt.subplots()
-	# Predictions
-	for topic in topics:
-		ax.plot(df[idx].index.total_seconds(),df[idx][topic].values, label=labels[topic])
-	ax.legend(loc=0)
-	ax.set_title(files[idx])
-
-
+for config in configs:
+	for idx in range(n):
+		dfs1 = df[config][idx]
+		graph21(dfs, titles, xlabel, ylabels)
 
 plt.show()

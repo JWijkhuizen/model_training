@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.6
+#!/usr/bin/env python
 
 # import rosbag
 import rospy
@@ -27,10 +27,10 @@ dir_results = path + '/results/'
 
 
 # Experiment name and configs
-exp = 'exp2'
+exp = 'exp3'
 # configs = ['dwa1','dwa2','teb1','teb2']
-configs = ['cdwa_v0_a0_b0']
-# configs = ['dwa1','dwa2']
+# configs = ['cdwa_v0_a0_b0']
+configs = ['cdwa1']
 
 d_topics = ['density1','narrowness1']
 

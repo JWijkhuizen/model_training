@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.6
+#!/usr/bin/env python
 
 # import rosbag
 import rospy
@@ -22,6 +22,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import GridSearchCV, GroupKFold
 from sklearn.preprocessing import PolynomialFeatures
 import pickle
+from matplotlib.widgets import Button
 
 
 from functions_postprocess import *
@@ -41,7 +42,7 @@ dir_results = path + '/results/'
 # Experiment name and configs
 exp = 'exp2'
 # configs = ['dwa1','dwa2','teb1','teb2']
-configs = ['cteb_v0_a0_b0']
+configs = ['cdwa_v0_a0_b0']
 # configs = ['dwa1','dwa2']
 
 d_topics = ['density1_f','narrowness1']
@@ -52,7 +53,7 @@ d_topics = ['density1_f','narrowness1']
 xtopics = ['density1_f','narrowness1','d_density1_f','performance2']
 ytopic = 'safety2'
 
-model = 'safety2_Poly3_cteb_v0_a0_b0_best.pkl'
+model = 'safety2_Poly6_cdwa1_4_best.pkl'
 
 # Resamplesize and smoothing (rolling)
 samplesize = 10
@@ -71,6 +72,8 @@ X, y, groups = generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags
 #     for idx in range(n_exp[config]):
 #         print('%-5s %-s'%(idx, files[config][idx]))
 
+def fnext(event):
+    plt.close()
 
 print('Load model')
 pkl_filename = dir_models + model
@@ -79,31 +82,38 @@ with open(pkl_filename, 'rb') as file:
 
 colors = ['tab:blue','tab:orange']
 for config in configs:  
-    pf3 = PolynomialFeatures(degree=3)
-    Xp3 = pf3.fit_transform(X[config])  
+    pf = PolynomialFeatures(degree=6)
+    Xp = pf.fit_transform(X[config])  
 
     gkf = GroupKFold(n_splits=int(groups[config][-1])+1)
     idm = 0
     for train, test in gkf.split(X[config], y[config], groups=groups[config]):
-        if idm == 1:
-            print('Predict')
-            y1 = m1.predict(Xp3[test])
-            for i in range(len(y1)):
-                y1[i] = min(y1[i],1)
-            for i in range(len(y[config])):
-                y[config][i] = min(y[config][i],1)
+        print('Predict')
+        y1 = m1.predict(Xp[test])
+        for i in range(len(y1)):
+            y1[i] = min(y1[i],1)
+        for i in range(len(y[config])):
+            y[config][i] = min(y[config][i],1)
 
-            print("Plotting")
-            fig, ax = plt.subplots()
-            ax.plot(y1, label='Model', color=colors[1])#, score = %s'%(round(m1.score(df[idy][xtopics].values,df[idy][ytopic].values),2)))
-            ax.plot(y[config][test], label='real', linestyle='--', color=colors[0])
-            ax.legend(loc=0)
-            # ax.set_title('Best safety model and real %s \n trained on run 1, tested on run %s , config = %s \n rmse = %s'%(ytopic,idy,config,round(mean_squared_error(y, y1),5)))
-            ax.set_ylim(0,1.2)
-            # if idy == len(files_dwa2)-1:
-            # print(y1)
-            # print('rmse = %s'%(mean_squared_error(y, y1))
-            plt.tight_layout()
+        print("Plotting")
+        fig, ax = plt.subplots()
+        ax.plot(y1, label='Model', color=colors[1])#, score = %s'%(round(m1.score(df[idy][xtopics].values,df[idy][ytopic].values),2)))
+        ax.plot(y[config][test], label='real', linestyle='--', color=colors[0])
+        ax.legend(loc=0)
+        # ax.set_title('Best safety model and real %s \n trained on run 1, tested on run %s , config = %s \n rmse = %s'%(ytopic,idy,config,round(mean_squared_error(y, y1),5)))
+        ax.set_ylim(0,1.2)
+        ax.set_title("test set: %s \n model: %s"%(idm,model))
+        # if idy == len(files_dwa2)-1:
+        # print(y1)
+        # print('rmse = %s'%(mean_squared_error(y, y1))
+        plt.tight_layout()
+
+        plt.subplots_adjust(bottom=0.2)
+        axnext = plt.axes([0.7, 0.05, 0.1, 0.075])
+        bnext = Button(axnext, 'Next')
+        bnext.on_clicked(fnext)
+
+        plt.show()
+
         idm+=1
 
-plt.show()
