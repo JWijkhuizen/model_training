@@ -30,22 +30,8 @@ def import_bag(file, samplesize, rolling, bag_topics=None, print_head=False):
         print(df.head())
     return df
 
-def check_shittyness(df,xtopics,ytopic,configs,n,samplesize):
-    for config in configs:
-        lags_m = dict()
-        lags = []
-        for idx in range(n):
-            lags_temp = determine_lags(df[config][idx],xtopics,ytopic,samplesize)
-            lags.append(lags_temp)
-            lags_m[idx] = lags_temp
-        mean_lags = np.array(lags).mean(axis=0).astype(int)
-        for idx in range(n):
-            print("Run %s"%idx)
-            for ide in range(4):
-                print(mean_lags[ide]-lags_m[idx][ide])
 
-
-def generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling):
+def generate_dataset_all(configs,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling):
     os.chdir(dir_bags)
     files = dict()
     df = dict()
@@ -56,7 +42,7 @@ def generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,start_ms,e
     for config in configs:
         df[config] = dict()
 
-        files[config] = sorted(glob.glob("%s_%s*.bag"%(exp,config)))
+        files[config] = sorted(glob.glob("%s_c%s*.bag"%(exp,config)))
 
         for idx in range(len(files[config])):
             df[config][idx] = import_bag(files[config][idx],samplesize,rolling)
@@ -67,7 +53,7 @@ def generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,start_ms,e
             df[config][idx].drop(df[config][idx].tail(int(end_ms/samplesize)).index,inplace=True) # drop last n rows
         # n = len(files[config])
         # check_shittyness(df,xtopics,ytopic,configs,n,samplesize)
-
+        print(df[config][0].head())
         # All the data in one set
         for idx in range(len(files[config])):
             n_group = files[config][idx][-5]    # Group number is the run number
@@ -127,7 +113,7 @@ def generate_dataset_shifted(configs,xtopics,ytopic,d_topics,exp,dir_bags,start_
     n_exp = dict()
     for config in configs:
         df[config] = dict()
-        files[config] = sorted(glob.glob("%s_%s*.bag"%(exp,config)))
+        files[config] = sorted(glob.glob("%s_c%s*.bag"%(exp,config)))
         lags[config] = []
         for idx in range(len(files[config])):
             # Import bags
@@ -168,7 +154,7 @@ def generate_dataset(configs,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,ro
     for config in configs:
         df[config] = dict()
 
-        files[config] = sorted(glob.glob("%s_%s*.bag"%(exp,config)))
+        files[config] = sorted(glob.glob("%s_c%s*.bag"%(exp,config)))
 
         for idx in range(len(files[config])):
             df[config][idx] = import_bag(files[config][idx],samplesize,rolling)

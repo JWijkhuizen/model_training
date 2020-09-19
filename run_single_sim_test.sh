@@ -13,9 +13,8 @@ export SIMULATION_TESTS_PATH
 #  Default values, set if no parameters are given
 ####
 
-declare -a configs=("teb1" "dwa1")
 # declare -a configs=("teb_v0_a0_b0" "teb_v1_a0_b0" "dwa_v0_a0_b0" "dwa_v1_a0_b0")
-# declare -a configs=("dwa_v0_a0_b0" "teb_v0_a0_b0")
+declare -a configs=("dwa_v0_a0_b0" "teb_v0_a0_b0")
 
 declare -a ws=(3 4)
 declare -a Cs=(8 6)
@@ -127,14 +126,10 @@ sleep 1
 for run in 0 1 ; do
 	# moved_obs=0
 	# echo "Environment width = ${w}, C = ${C}, run = ${run}"
-	timeout 60s bash -c "
+	timeout 80s bash -c "
 	cd $MODEL_TRAINING_PATH/scripts;
 	./simrun_move_obstacles.py 3 $l 8 $sx $n_max 0 0;
-	exit;"
-	sx=101
-	timeout 60s bash -c "
-	cd $MODEL_TRAINING_PATH/scripts;
-	./simrun_move_obstacles.py 4 $l 6 $sx $n_max 21 100;
+	./simrun_move_obstacles.py 4 $l 6 $sx $n_max 21 101;
 	exit;"
 	# moved_obs=$?
 	# if [ $moved_obs -eq 0 ]; then
@@ -152,13 +147,9 @@ for run in 0 1 ; do
 			exit"
 
 			# echo "Launching: move_base"
-			# echo "Configuration: $config"
-			# gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $METACONTROL_WS_PATH/devel/setup.bash;
-			# roslaunch $config $config.launch;
-			# exit"
 			echo "Configuration: $config"
 			gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $METACONTROL_WS_PATH/devel/setup.bash;
-			roslaunch simulation_tests navigation_$config.launch;
+			roslaunch $config $config.launch;
 			exit"
 
 			# Rosbag

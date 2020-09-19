@@ -14,7 +14,7 @@ export SIMULATION_TESTS_PATH
 ####
 
 # declare -a configs=("dwa1" "dwa2" "teb1" "teb2")
-declare -a configs=("teb_v0_a0_b0" "teb_v1_a0_b0" "dwa_v0_a0_b0" "dwa_v1_a0_b0")
+declare -a configs=("teb_v0_a0_b0" "dwa_v0_a0_b0")
 # declare -a configs=("dwa_v0_a0_b0" "teb_v0_a0_b0")
 
 declare -a ws=(4 3)
@@ -30,8 +30,8 @@ for w in "${ws[@]}" ; do
 	done
 done
 
-declare exp="4"
-declare sx=100
+declare exp="5"
+declare sx=1
 declare x_goal=26
 # declare -a runs = 
 
@@ -81,14 +81,24 @@ start_simulation () {
 	cd $MODEL_TRAINING_PATH/scripts;
 	./simrun_init_environment.py ${ws[0]} $l $n_max;
 	exit;"
-
+}
+start_observers () {
 	echo "Launch and load observers"
-	# gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $METACONTROL_WS_PATH/devel/setup.bash;
-	# rosrun rosgraph_monitor monitor;
-	# exit"
-	gnome-terminal --window --geometry=80x24+10+10 -- bash -c "
-	roslaunch simulation_tests observers.launch;
-	exit"	
+	gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $METACONTROL_WS_PATH/devel/setup.bash;
+	rosrun rosgraph_monitor monitor;
+	exit"
+	# gnome-terminal --window --geometry=80x24+10+10 -- bash -c "
+	# roslaunch simulation_tests observers.launch;
+	# exit"	
+	sleep 2
+
+bash -c  "
+	rosservice call /load_observer \"name: 'SafetyObserverTrain'\";
+	rosservice call /load_observer \"name: 'NarrownessObserverTrain'\";
+	rosservice call /load_observer \"name: 'ObstacleDensityObserverTrain'\";
+	rosservice call /load_observer \"name: 'PerformanceObserverDWATrain'\";
+	rosservice call /load_observer \"name: 'PerformanceObserverTEBTrain'\";
+	exit;"
 }
 restart_simulation () {
 	# Check that there are not running ros nodes
@@ -114,22 +124,16 @@ start_simulation
 
 
 
-# bash -c  "
-# rosservice call /load_observer \"name: 'SafetyObserverTrain'\";
-# rosservice call /load_observer \"name: 'NarrownessObserverTrain'\";
-# rosservice call /load_observer \"name: 'ObstacleDensityObserverTrain'\";
-# exit;"
 declare fail=0
 declare moved_obs=0
 
 for w in "${ws[@]}" ; do
-
-	sleep 1
 	for C in "${Cs[@]}" ; do
 		for run in 0 1 2 3 4 ; do
 			moved_obs=0
 			echo "Environment width = ${w}, C = ${C}, run = ${run}"
-			timeout 60s bash -c "
+			# timeout 60s bash -c "
+			bash -c "
 			cd $MODEL_TRAINING_PATH/scripts;
 			./simrun_move_environment.py $w $l $C $sx $n_max;
 			exit;"
@@ -143,6 +147,9 @@ for w in "${ws[@]}" ; do
 				fail=2
 				while [ $fail -gt 0 ] ; do
 					fail=2
+
+					start_observers
+
 					# echo "Launching: Spawn boxer"
 					gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $SIMULATION_WS_PATH/devel/setup.bash;
 					roslaunch simulation_tests spawn_boxer.launch;
@@ -159,7 +166,8 @@ for w in "${ws[@]}" ; do
 
 					# Rosbag
 					if [ $record -eq 1 ] ; then
-						timeout 120s gnome-terminal --window --geometry=80x24+10+10 -- bash -c  "
+						# timeout 120s gnome-terminal --window --geometry=80x24+10+10 -- bash -c  "
+						gnome-terminal --window --geometry=80x24+10+10 -- bash -c  "
 						echo 'Start record';
 						cd $MODEL_TRAINING_PATH/bags;
 						rosbag record -e '/metrics/.*' -O exp${exp}_c${config}_w${w}_C${C}_r${run}.bag;
@@ -167,25 +175,27 @@ for w in "${ws[@]}" ; do
 					fi
 
 					# echo "Start navigation manager"
-					echo "Fail is ${fail}"
-					timeout 120s bash -c "
+					# timeout 120s bash -c "
+					bash -c "
 					echo 'Starting navigation';
 					cd $MODEL_TRAINING_PATH/scripts;
 					./navigation_manager.py $x_goal 0 0;
 					exit;"
 					fail=$?
-					echo "Fail is ${fail}"
 					if [ $fail -eq 1 ]; then
-						echo "Failed run, try again"
+						echo "${fail}: Failed run, try again"
 					fi
 					if [ $fail -gt 1 ]; then
-						echo "Failed navigation, Restarting"
+						echo "${fail}: Failed navigation, Restarting"
 						restart_simulation
 					fi 
 
 
 					# Stop record node
-					gnome-terminal --window --geometry=80x24+10+10 -- bash -c "rosnode list | grep record* | xargs rosnode kill; exit;"
+					gnome-terminal --window --geometry=80x24+10+10 -- bash -c "
+					rosnode list | grep record* | xargs rosnode kill;
+					rosnode list | grep graph_monitor | xargs rosnode kill; 
+					exit;"
 
 					# echo "Kill robot and move_base"
 					gnome-terminal --window --geometry=80x24+10+10 -- bash -c "

@@ -2,75 +2,113 @@
 
 # import rosbag
 import rospy
-import rosbag_pandas
 import rospkg
 import os
+import sys
 import glob
 import matplotlib.pyplot as plt
-import statistics as stat
-from openpyxl import Workbook
 import pandas as pd
 import numpy as np
-from mpl_toolkits import mplot3d
-from sklearn.linear_model import LinearRegression, Ridge
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.neural_network import MLPRegressor
-from sklearn.svm import SVR
-from sklearn.preprocessing import StandardScaler
 import pickle
+from matplotlib.widgets import Button
 
 from functions_postprocess import *
+
 
 # Paths
 rospack = rospkg.RosPack()
 path = rospack.get_path('model_training')
-dir_bags = path + '/bags'
+dir_bags = path + '/bags/'
+dir_figs = path + '/figures/'
+dir_models = path + '/models/'
+dir_results = path + '/results/'
 
-# Topics to get from bags
-bag_topics = ['/metrics/safety1','/metrics/safety2','/metrics/density1','/metrics/narrowness1','/metrics/performance2']
-d_topics = ['density1','narrowness1']
+# Experiment name and configs
+exp = 'exp5'
+configs = ['dwa_v0_a0_b0','teb_v0_a0_b0']
+# configs = ['cdwa1']
 
-# Experiment and configs to import
-exp = 'Experiment6'
-configs = ['dwa1']
+# Topics
+d_topics = ['obstacle_density','narrowness']
+# xtopics = d_topics + ['d_%s'%d_topic for d_topic in d_topics]
+# xtopics = d_topics + ['d_%s'%d_topic for d_topic in d_topics] + ['performance2']
+xtopics = ['obstacle_density','narrowness','d_obstacle_density','performance']
+# ytopic = 'performance3'
+ytopic = 'safety_wl'
 
-# Data postprocess
-samplesize = 10		# [ms] resample size
-rolling = 20		# [n]  for smooting the data
+# Resamplesize and smoothing (rolling)
+samplesize = 10
+rolling = 100
 
-n = 10
+# Experiment start and end
+start_ms = 1
+end_ms = 1
 
-# Bag files
-os.chdir(dir_bags)
-files = []
-for config in configs:
-	files = files + sorted(glob.glob("%s*%s.bag"%(exp,config)))
+# Import Bag files into pandas
+files, df = generate_dataset(configs,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling)
+# os.chdir(dir_bags)
+# files = dict()
+# for config in configs:
+#     files[config] = sorted(glob.glob("%s_%s*.bag"%(exp,config)))
 
-# Print all the files with idx
 print('idx   File')
-[print('%-5s %-s'%(idx, files[idx])) for idx in range(len(files))]
+for config in configs:
+    for idx in range(len(files[config])):
+        print('%-5s %-s'%(idx, files[config][idx]))
 
-# Import bags and store in pandas
-print("Import bags")
-df = dict()
-df2 = dict()
-for idx in range(n):
-	df[idx] = import_bag(files[idx], samplesize, rolling)
-	df[idx] = add_derivs(df[idx],d_topics)
+# Functions for buttons
+def fnext(event):
+    global idx
+    idx += 1
+    plt.close()
 
-# topics to plot
-topics = ['safety1', 'safety2']
-labels = dict()
-labels['safety1'] = 'safety [0,1]'
-labels['safety2'] = 'safety without limit at 1'
+def fprev(event):
+    global idx
+    idx -= 1
+    plt.close()
 
-# colors = ['tab:blue','tab:orange']
-# idc = 0
-# for idy in range(len(files)):
+def fsave(event):
+	axprev.set_visible(False)
+	axnext.set_visible(False)
+	axsave.set_visible(False)
+	axexit.set_visible(False)
+
+	fig.savefig(dir_figs + 'data_plot_exp%s_config%s_idx%s'%(exp,config,idx) + '.png')
+	plt.close()
+
+def fexit(event):
+    global idx
+    idx = 100
+    plt.close()
+
+
+
+
+files_incl = dict()
+# topics = [['safety1','performance4'],[]]
 print("Plotting")
 for config in configs:
-	for idx in range(n):
-		dfs1 = df[config][idx]
-		graph21(dfs, titles, xlabel, ylabels)
+    files_incl[config] = []
+    idx = 19
+    while idx in range(len(files[config])):   
+        dfs1 = [df[config][idx]['safety'],df[config][idx]['performance']]
+        dfs2 = [df[config][idx]['obstacle_density'],df[config][idx]['narrowness']]
+        titles = ['Experiment:%s, idx:%s, config:%s \n Quality attributes'%(exp,idx,config),'Environment metrics and robot states']
+        xlabel = 'Time [s]'
+        ylabels = ['QA value','EM value']
+        fig, ax = graph21([dfs1,dfs2], titles, xlabel, ylabels)
+        plt.subplots_adjust(bottom=0.2)
+        axprev = plt.axes([0.1, 0.05, 0.1, 0.075])
+        axnext = plt.axes([0.3, 0.05, 0.1, 0.075])
+        axsave = plt.axes([0.6, 0.05, 0.1, 0.075])
+        axexit = plt.axes([0.8, 0.05, 0.1, 0.075])
+        bnext = Button(axnext, 'Next')
+        bprev = Button(axprev, 'Prev')
+        bsave = Button(axsave, 'Save')
+        bexit = Button(axexit, 'Exit')
+        bnext.on_clicked(fnext)
+        bprev.on_clicked(fprev)
+        bsave.on_clicked(fsave)
+        bexit.on_clicked(fexit)
+        plt.show()
 
-plt.show()
