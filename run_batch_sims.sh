@@ -30,7 +30,7 @@ for w in "${ws[@]}" ; do
 	done
 done
 
-declare exp="5"
+declare exp="6"
 declare sx=1
 declare x_goal=26
 # declare -a runs = 

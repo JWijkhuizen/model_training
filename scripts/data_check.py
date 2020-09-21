@@ -24,7 +24,7 @@ dir_models = path + '/models/'
 dir_results = path + '/results/'
 
 # Experiment name and configs
-exp = 'exp5'
+exp = 'exp6'
 configs = ['dwa_v0_a0_b0','teb_v0_a0_b0']
 # configs = ['cdwa1']
 
