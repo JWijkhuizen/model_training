@@ -16,7 +16,7 @@ def import_bag(file, samplesize, rolling, bag_topics=None, print_head=False):
     df = rosbag_pandas.bag_to_dataframe(file, include=bag_topics)
     df.index -= df.index[0]
     df.index = pd.to_timedelta(df.index, unit='s')
-    print(df.columns)
+    # print(df.columns)
     topics = [topic.replace('/metrics/','').replace('/data','') for topic in list(df.columns)]
     df.columns = topics
     # print(topics)
@@ -59,7 +59,7 @@ def generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,samplesize
         df[config] = dict()
 
         files[config] = sorted(glob.glob("*%s_c%s*.bag"%(exp,config)))
-        print(files[config])
+        # print(files[config])
         for idx in range(len(files[config])):
             df[config][idx],start_ms,end_ms = import_bag(files[config][idx],samplesize,rolling)
             df[config][idx] = add_derivs(df[config][idx],d_topics)
@@ -173,10 +173,10 @@ def generate_dataset(configs,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,ro
 
         for idx in range(len(files[config])):
             df[config][idx],start,end = import_bag(files[config][idx],samplesize,rolling)
-            print(end)
-            print(df[config][idx].index[-1].total_seconds())
+            # print(end)
+            # print(df[config][idx].index[-1].total_seconds())
             end = df[config][idx].index[-1].total_seconds() - end
-            print(end)
+            # print(end)
             df[config][idx] = add_derivs(df[config][idx],d_topics)
 
             # Start and end time:

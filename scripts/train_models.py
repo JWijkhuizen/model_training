@@ -130,7 +130,7 @@ for ytopic in ytopics:
                 ax.set_title("Model (%s) test on unseen data \n for config: %s"%(ytopic,config))
                 plt.tight_layout()
 
-                # fig.savefig(dir_figs + 'model_%s_test_config_%s'%(ytopic,config) + '.png')
+                fig.savefig(dir_figs + 'model_%s_test_config_%s'%(ytopic,config) + '.png')
             idm+=1
 
 plt.show()
