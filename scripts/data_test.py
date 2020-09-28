@@ -25,7 +25,7 @@ dir_models = path + '/models/'
 dir_results = path + '/results/'
 
 # Experiment name and configs
-exp = '12'
+exp = '14'
 configs = ['dwa_v0_a0_b0','teb_v0_a0_b0']
 # configs = ['cdwa1']
 
@@ -34,12 +34,12 @@ d_topics = []
 # xtopics = d_topics + ['d_%s'%d_topic for d_topic in d_topics]
 # xtopics = d_topics + ['d_%s'%d_topic for d_topic in d_topics] + ['performance2']
 # xtopics = ['obstacle_density11','narrowness','d_obstacle_density','performance']
-xtopics = ['obstacle_density21','narrowness1','performance2']
+xtopics = ['obstacle_density21','narrowness1']
 # ytopic = 'performance3'
-ytopics = ['safety','performance32']
+ytopics = ['safety']
 
 # Resamplesize and smoothing (rolling)
-samplesize = 10
+samplesize = 100
 rolling = 1
 
 # Experiment start and end
@@ -91,13 +91,13 @@ files_incl = dict()
 print("Plotting")
 for config in configs:
     files_incl[config] = []
-    idx = 0
+    idx = 10
     while idx in range(len(files[config])):   
         dfs1 = [df[config][idx][ytopic] for ytopic in ytopics]
         dfs2 = [df[config][idx][xtopic] for xtopic in xtopics]
         titles = ['Experiment:%s, idx:%s, config:%s \n Quality attributes'%(exp,idx,config),'Environment metrics and robot states']
         xlabel = 'Time [s]'
-        ylabels = ['QA value','EM value']
+        ylabels = ['Quality \n level','Environment \n measure']
         fig, ax = graph21([dfs1,dfs2], titles, xlabel, ylabels)
         plt.subplots_adjust(bottom=0.2)
         axprev = plt.axes([0.1, 0.05, 0.1, 0.075])

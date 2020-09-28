@@ -16,7 +16,7 @@ def import_bag(file, samplesize, rolling, bag_topics=None, print_head=False):
     df = rosbag_pandas.bag_to_dataframe(file, include=bag_topics)
     df.index -= df.index[0]
     df.index = pd.to_timedelta(df.index, unit='s')
-    # print(df.columns)
+    print(df.columns)
     topics = [topic.replace('/metrics/','').replace('/data','') for topic in list(df.columns)]
     df.columns = topics
     # print(topics)
@@ -25,9 +25,12 @@ def import_bag(file, samplesize, rolling, bag_topics=None, print_head=False):
     # print("length S=%s"%len(df['safety'].dropna()))
     # print(df['time'].dropna())
     # print(df['start_end'].dropna())
-    start = df.loc[df['start_end'] == "start"].index[0].total_seconds()
-    end = df.loc[df['start_end'] == "end"].index[0].total_seconds()
-
+    try:
+        start = df.loc[df['start_end'] == "start"].index[0].total_seconds()
+        end = df.loc[df['start_end'] == "end"].index[0].total_seconds()
+    except:
+        start = df.index[0].total_seconds()
+        end = df.index[1].total_seconds()
 
     df = df.groupby(level=0).mean()
     df = df.resample('%sms'%samplesize).mean()
@@ -44,7 +47,7 @@ def import_bag(file, samplesize, rolling, bag_topics=None, print_head=False):
     return df, start, end
 
 
-def generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling):
+def generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,samplesize,rolling):
     os.chdir(dir_bags)
     files = dict()
     df = dict()
@@ -58,7 +61,7 @@ def generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,start_ms,e
         files[config] = sorted(glob.glob("*%s_c%s*.bag"%(exp,config)))
         print(files[config])
         for idx in range(len(files[config])):
-            df[config][idx] = import_bag(files[config][idx],samplesize,rolling)
+            df[config][idx],start_ms,end_ms = import_bag(files[config][idx],samplesize,rolling)
             df[config][idx] = add_derivs(df[config][idx],d_topics)
 
             # Start and end time:

@@ -27,8 +27,8 @@ dir_models = path + '/models/'
 dir_results = path + '/results/'
 
 # Experiment name and configs
-exp = 'validation'
-configs = ['teb_v0_a0_b0']
+exp = 'val3'
+configs = ['teb_v1_a0_b0']
 # configs = ['teb_v0_a0_b0']
 
 d_topics = []
@@ -54,7 +54,7 @@ print(files)
 colors = ['tab:blue','tab:orange']
 for ytopic in ytopics:
     # Import Bag files into pandas
-    X, y, groups = generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling)
+    X, y, groups = generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,samplesize,rolling)
 
     for config in configs:
         print('Load model')
@@ -92,7 +92,7 @@ for ytopic in ytopics:
         ax.set_ylim(0,1.2)
         ax.set_ylabel('QA')
         ax.set_xlabel("Time [s]")
-        ax.set_title("Model (%s) test on unseen data \n for config: %s"%(ytopic,config))
+        ax.set_title("Model (%s) validation \n for config: %s"%(ytopic,config))
         plt.tight_layout()
 
         os.chdir(dir_figs)

@@ -26,11 +26,11 @@ dir_models = path + '/models/'
 dir_results = path + '/results/'
 
 # Experiment name and configs
-exp = 'exp10'
-configs = ['teb_v0_a0_b0']
+exp = 'exp14'
+configs = ['teb_v0_a0_b0','dwa_v0_a0_b0','teb_v1_a0_b0','dwa_v1_a0_b0']
 
 # Topics
-d_topics = ['obstacle_density21']
+d_topics = []
 xtopics = ['obstacle_density21','narrowness1']
 ytopics = ['safety']
 # ytopics = ['performance_dir']
@@ -55,7 +55,7 @@ end_ms = 1000
 colors = ['tab:blue','tab:orange']
 for ytopic in ytopics:
     # Import Bag files into pandas
-    X, y, groups = generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling)
+    X, y, groups = generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,samplesize,rolling)
 
     # Train loop
     lr = LinearRegression(normalize=True)
