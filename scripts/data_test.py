@@ -18,27 +18,29 @@ from functions_postprocess import *
 # Paths
 rospack = rospkg.RosPack()
 path = rospack.get_path('model_training')
-dir_bags = path + '/bags/'
+path2 = rospack.get_path('simulation_tests')
+dir_bags = path2 + '/bags/'
 dir_figs = path + '/figures/'
 dir_models = path + '/models/'
 dir_results = path + '/results/'
 
 # Experiment name and configs
-exp = 'exp5'
+exp = '12'
 configs = ['dwa_v0_a0_b0','teb_v0_a0_b0']
 # configs = ['cdwa1']
 
 # Topics
-d_topics = ['obstacle_density','narrowness']
+d_topics = []
 # xtopics = d_topics + ['d_%s'%d_topic for d_topic in d_topics]
 # xtopics = d_topics + ['d_%s'%d_topic for d_topic in d_topics] + ['performance2']
-xtopics = ['obstacle_density','narrowness','d_obstacle_density','performance']
+# xtopics = ['obstacle_density11','narrowness','d_obstacle_density','performance']
+xtopics = ['obstacle_density21','narrowness1','performance2']
 # ytopic = 'performance3'
-ytopic = 'safety_wl'
+ytopics = ['safety','performance32']
 
 # Resamplesize and smoothing (rolling)
 samplesize = 10
-rolling = 100
+rolling = 1
 
 # Experiment start and end
 start_ms = 1
@@ -89,10 +91,10 @@ files_incl = dict()
 print("Plotting")
 for config in configs:
     files_incl[config] = []
-    idx = 19
+    idx = 0
     while idx in range(len(files[config])):   
-        dfs1 = [df[config][idx]['safety'],df[config][idx]['performance']]
-        dfs2 = [df[config][idx]['obstacle_density'],df[config][idx]['narrowness']]
+        dfs1 = [df[config][idx][ytopic] for ytopic in ytopics]
+        dfs2 = [df[config][idx][xtopic] for xtopic in xtopics]
         titles = ['Experiment:%s, idx:%s, config:%s \n Quality attributes'%(exp,idx,config),'Environment metrics and robot states']
         xlabel = 'Time [s]'
         ylabels = ['QA value','EM value']

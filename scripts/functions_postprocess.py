@@ -20,18 +20,31 @@ def import_bag(file, samplesize, rolling, bag_topics=None, print_head=False):
     topics = [topic.replace('/metrics/','').replace('/data','') for topic in list(df.columns)]
     df.columns = topics
     # print(topics)
+    # print("length OD=%s"%len(df['obstacle_density21'].dropna()))
+    # print("length N=%s"%len(df['narrowness1'].dropna()))
+    # print("length S=%s"%len(df['safety'].dropna()))
+    # print(df['time'].dropna())
+    # print(df['start_end'].dropna())
+    start = df.loc[df['start_end'] == "start"].index[0].total_seconds()
+    end = df.loc[df['start_end'] == "end"].index[0].total_seconds()
+
 
     df = df.groupby(level=0).mean()
     df = df.resample('%sms'%samplesize).mean()
     df = df.interpolate(method='linear',limit_direction='both')
     df = df.rolling(rolling, min_periods=1).mean()
 
+    # print("length OD=%s"%len(df['obstacle_density21'].dropna()))
+    # print("length N=%s"%len(df['narrowness1'].dropna()))
+    # print("length S=%s"%len(df['safety'].dropna()))
+    # print(df['safety'].dropna().head(20))
+
     if print_head:
         print(df.head())
-    return df
+    return df, start, end
 
 
-def generate_dataset_all(configs,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling):
+def generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling):
     os.chdir(dir_bags)
     files = dict()
     df = dict()
@@ -42,8 +55,8 @@ def generate_dataset_all(configs,d_topics,exp,dir_bags,start_ms,end_ms,samplesiz
     for config in configs:
         df[config] = dict()
 
-        files[config] = sorted(glob.glob("%s_c%s*.bag"%(exp,config)))
-
+        files[config] = sorted(glob.glob("*%s_c%s*.bag"%(exp,config)))
+        print(files[config])
         for idx in range(len(files[config])):
             df[config][idx] = import_bag(files[config][idx],samplesize,rolling)
             df[config][idx] = add_derivs(df[config][idx],d_topics)
@@ -52,8 +65,7 @@ def generate_dataset_all(configs,d_topics,exp,dir_bags,start_ms,end_ms,samplesiz
             df[config][idx].drop(df[config][idx].head(int(start_ms/samplesize)).index,inplace=True)
             df[config][idx].drop(df[config][idx].tail(int(end_ms/samplesize)).index,inplace=True) # drop last n rows
         # n = len(files[config])
-        # check_shittyness(df,xtopics,ytopic,configs,n,samplesize)
-        print(df[config][0].head())
+        # print(df[config][0].head())
         # All the data in one set
         for idx in range(len(files[config])):
             n_group = files[config][idx][-5]    # Group number is the run number
@@ -154,15 +166,19 @@ def generate_dataset(configs,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,ro
     for config in configs:
         df[config] = dict()
 
-        files[config] = sorted(glob.glob("%s_c%s*.bag"%(exp,config)))
+        files[config] = sorted(glob.glob("*%s_c%s*.bag"%(exp,config)))
 
         for idx in range(len(files[config])):
-            df[config][idx] = import_bag(files[config][idx],samplesize,rolling)
+            df[config][idx],start,end = import_bag(files[config][idx],samplesize,rolling)
+            print(end)
+            print(df[config][idx].index[-1].total_seconds())
+            end = df[config][idx].index[-1].total_seconds() - end
+            print(end)
             df[config][idx] = add_derivs(df[config][idx],d_topics)
 
             # Start and end time:
-            df[config][idx].drop(df[config][idx].head(int(start_ms/samplesize)).index,inplace=True)
-            df[config][idx].drop(df[config][idx].tail(int(end_ms/samplesize)).index,inplace=True) # drop last n rows
+            df[config][idx].drop(df[config][idx].head(int((start*1000)/samplesize)).index,inplace=True)
+            df[config][idx].drop(df[config][idx].tail(int((end*1000)/samplesize)).index,inplace=True) # drop last n rows
     return files, df
 
 def add_derivs(df,topics):
@@ -290,10 +306,7 @@ def determine_lags(df1,topics_shift,topic_ref,samplesize):
 def corrs_lags(df1,topics_shift,topic_ref,samplesize):
     ms = 1500
     n = ms/samplesize
-    if topic_ref == 'performance2_2':
-        lags = range(0,int(n),1)
-    else:
-        lags = range(-int(n),int(n),1)
+    lags = range(-int(n),int(n),1)
 
     lag_n = []
     rs_max = []

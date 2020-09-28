@@ -20,29 +20,29 @@ from functions_postprocess import *
 # Paths
 rospack = rospkg.RosPack()
 path = rospack.get_path('model_training')
-path_st = rospack.get_path('simulation_tests')
-dir_bags = path + '/bags'
+path2 = rospack.get_path('simulation_tests')
+dir_bags = path2 + '/bags/'
 dir_figs = path + '/figures/'
 dir_models = path + '/models/'
 dir_results = path + '/results/'
 
 # Experiment name and configs
 exp = 'validation'
-configs = ['teb_v0_a0_b0','dwa_v0_a0_b0']
+configs = ['teb_v0_a0_b0']
 # configs = ['teb_v0_a0_b0']
 
-d_topics = ['narrowness']
+d_topics = []
 
-xtopics = ['obstacle_density','narrowness']
-ytopics = ['safety', 'performance']
+xtopics = ['obstacle_density21','narrowness1']
+ytopics = ['safety']
 
 # Resamplesize and smoothing (rolling)
-samplesize = 10
+samplesize = 100
 rolling = 1
 
 # Experiment start and end
-start_ms = 7000
-end_ms = 1000
+start_ms = 1
+end_ms = 1
 
 # Import Bag files into pandas
 os.chdir(dir_bags)
@@ -54,7 +54,7 @@ print(files)
 colors = ['tab:blue','tab:orange']
 for ytopic in ytopics:
     # Import Bag files into pandas
-    X, y, groups = generate_dataset_all_selectedfiles(files,configs,xtopics,ytopic,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling)
+    X, y, groups = generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling)
 
     for config in configs:
         print('Load model')
@@ -65,7 +65,7 @@ for ytopic in ytopics:
 
         
 
-        pf = PolynomialFeatures(degree=6)
+        pf = PolynomialFeatures(degree=5)
         Xp = pf.fit_transform(X[config])
 
         y1 = model.predict(Xp)

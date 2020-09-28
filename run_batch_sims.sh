@@ -14,7 +14,7 @@ export SIMULATION_TESTS_PATH
 ####
 
 # declare -a configs=("dwa1" "dwa2" "teb1" "teb2")
-declare -a configs=("teb_v0_a0_b0" "dwa_v0_a0_b0")
+declare -a configs=("dwa_v0_a0_b0" "teb_v0_a0_b0")
 # declare -a configs=("dwa_v0_a0_b0" "teb_v0_a0_b0")
 
 declare -a ws=(4 3)
@@ -30,7 +30,7 @@ for w in "${ws[@]}" ; do
 	done
 done
 
-declare exp="7"
+declare exp="8"
 declare sx=1
 declare x_goal=26
 # declare -a runs = 
@@ -86,20 +86,19 @@ start_observers () {
 	echo "Launch and load observers"
 	gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $METACONTROL_WS_PATH/devel/setup.bash;
 	rosrun rosgraph_monitor monitor;
-	exit"
-	# gnome-terminal --window --geometry=80x24+10+10 -- bash -c "
-	# roslaunch simulation_tests observers.launch;
-	# exit"	
-	sleep 2
+	read -rsn 1 -p 'Press any key to close this terminal...'"
 
-bash -c  "
-	rosservice call /load_observer \"name: 'SafetyObserverTrain'\";
-	rosservice call /load_observer \"name: 'NarrownessObserverTrain'\";
-	rosservice call /load_observer \"name: 'ObstacleDensityObserverTrain'\";
-	rosservice call /load_observer \"name: 'PerformanceObserverDWATrain'\";
-	rosservice call /load_observer \"name: 'PerformanceObserverTEBTrain'\";
-	exit;"
+	sleep 5
+
+	bash -c  "
+		rosservice call /load_observer \"name: 'SafetyObserverTrain'\";
+		rosservice call /load_observer \"name: 'NarrownessObserverTrain'\";
+		rosservice call /load_observer \"name: 'ObstacleDensityObserverTrain'\";
+		rosservice call /load_observer \"name: 'PerformanceObserverDWATrain'\";
+		rosservice call /load_observer \"name: 'PerformanceObserverTEBTrain'\";
+		exit;"
 }
+
 restart_simulation () {
 	# Check that there are not running ros nodes
 	kill_running_ros_nodes

@@ -68,9 +68,9 @@ start_observers () {
 	echo "Launch and load observers"
 	gnome-terminal --window --geometry=80x24+10+10 -- bash -c "source $METACONTROL_WS_PATH/devel/setup.bash;
 	rosrun rosgraph_monitor monitor;
-	exit"
+	read -rsn 1 -p 'Press any key to close this terminal...'"
 
-	sleep 2
+	sleep 5
 
 	bash -c  "
 		rosservice call /load_observer \"name: 'SafetyObserverTrain'\";
@@ -100,7 +100,7 @@ wait_for_gzserver_to_end
 
 start_simulation
 
-start_observers
+# start_observers
 
 
 declare fail=0

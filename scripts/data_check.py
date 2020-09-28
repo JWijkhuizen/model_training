@@ -24,7 +24,7 @@ dir_models = path + '/models/'
 dir_results = path + '/results/'
 
 # Experiment name and configs
-exp = 'exp6'
+exp = 'exp7'
 configs = ['dwa_v0_a0_b0','teb_v0_a0_b0']
 # configs = ['cdwa1']
 
@@ -75,7 +75,7 @@ print("Plotting")
 for config in configs:
     files_incl[config] = []
     for idx in range(len(files[config])):   
-        dfs1 = [df[config][idx]['safety'],df[config][idx]['performance']]
+        dfs1 = [df[config][idx]['safety'],df[config][idx]['safety_old']]#,df[config][idx]['performance']]
         dfs2 = [df[config][idx]['obstacle_density'],df[config][idx]['narrowness'],df[config][idx]['d_obstacle_density']]
         titles = ['Quality attributes \n %s %s'%(idx, files[config][idx]),'Environment metrics and robot states']
         xlabel = 'Time [s]'

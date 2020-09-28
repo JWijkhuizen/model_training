@@ -16,45 +16,46 @@ import pickle
 
 from functions_postprocess import *
 
-
 # Paths
 rospack = rospkg.RosPack()
 path = rospack.get_path('model_training')
-dir_bags = path + '/bags/'
+path2 = rospack.get_path('simulation_tests')
+dir_bags = path2 + '/bags/'
 dir_figs = path + '/figures/'
 dir_models = path + '/models/'
 dir_results = path + '/results/'
 
 # Experiment name and configs
-exp = 'exp6'
-configs = ['dwa_v0_a0_b0','teb_v0_a0_b0']
+exp = 'exp10'
+configs = ['teb_v0_a0_b0']
 
 # Topics
-d_topics = ['obstacle_density','narrowness']
-xtopics = ['obstacle_density','narrowness']
-# ytopics = ['safety', 
-ytopics = ['performance_dir']
+d_topics = ['obstacle_density21']
+xtopics = ['obstacle_density21','narrowness1']
+ytopics = ['safety']
+# ytopics = ['performance_dir']
 
 # Models
-polies = [1,2,3,4,5,6]
+# polies = [1,2,3,4,5,6]
+polies = [5]
 
 # Resamplesize and smoothing (rolling)
-samplesize = 10
+samplesize = 100
 rolling = 1
 
 # Experiment start and end
 start_ms = 8000
 end_ms = 1000
 
-print('Load files variable with files to include')
-pkl_filename = dir_bags + "files_incl_%s"%(exp)
-with open(pkl_filename, 'rb') as file:
-    files = pickle.load(file)
+# print('Load files variable with files to include')
+# pkl_filename = dir_bags + "files_incl_%s"%(exp)
+# with open(pkl_filename, 'rb') as file:
+#     files = pickle.load(file)
 
 colors = ['tab:blue','tab:orange']
 for ytopic in ytopics:
     # Import Bag files into pandas
-    X, y, groups = generate_dataset_all_selectedfiles(files,configs,xtopics,ytopic,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling)
+    X, y, groups = generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling)
 
     # Train loop
     lr = LinearRegression(normalize=True)
@@ -100,35 +101,36 @@ for ytopic in ytopics:
         print(best_model_name)
         idm = 0
         for train, test in gkf.split(X[config], y[config], groups=groups[config]):
-            # if idm == idm_best:
-            y1 = model_best.predict(Xp[test])
-            for i in range(len(y1)):
-                y1[i] = min(y1[i],1)
-            yr = y[config][test]
-            for i in range(len(yr)):
-                yr[i] = min(yr[i],1)
+            if idm == idm_best:
+                y1 = model_best.predict(Xp[test])
+                # for i in range(len(y1)):
+                #     y1[i] = min(y1[i],1)
+                yr = y[config][test]
+                # for i in range(len(yr)):
+                #     yr[i] = min(yr[i],1)
 
-            # Scoring metrics
-            print("mean squared error       = %s"%mean_squared_error(yr,y1))
-            print("explained variance score = %s"%explained_variance_score(yr,y1))
-            print("r2 score                 = %s"%r2_score(yr,y1))
+                # Scoring metrics
+                print("mean squared error       = %s"%mean_squared_error(yr,y1))
+                print("explained variance score = %s"%explained_variance_score(yr,y1))
+                print("r2 score                 = %s"%r2_score(yr,y1))
 
-            print(len(yr))
-            t = np.linspace(0,(len(yr)-1)/100,len(yr))
-            print(t[2]-t[1])
-            print(t)
-            fig, ax = plt.subplots()
-            ax.plot(t, y1, label='Model', color=colors[1])#, score = %s'%(round(m1.score(df[idy][xtopics].values,df[idy][ytopic].values),2)))
-            ax.plot(t, yr, label='real', linestyle='--', color=colors[0])
-            ax.legend(loc=0)
-            # ax.set_title('Best safety model and real %s \n trained on run 1, tested on run %s , config = %s \n rmse = %s'%(ytopic,idy,config,round(mean_squared_error(y, y1),5)))
-            ax.set_ylim(0,1.2)
-            ax.set_ylabel('QA')
-            ax.set_xlabel("Time [s]")
-            ax.set_title("Model (%s) test on unseen data \n for config: %s"%(ytopic,config))
-            plt.tight_layout()
+                # print(len(yr))
+                t = np.linspace(0,(len(yr)-1)/10,len(yr))
+                # print(t[2]-t[1])
+                # print(t)
+                fig, ax = plt.subplots()
+                ax.plot(t, y1, label='Model', color=colors[1])#, score = %s'%(round(m1.score(df[idy][xtopics].values,df[idy][ytopic].values),2)))
+                ax.plot(t, yr, label='real', linestyle='--', color=colors[0])
+                ax.legend(loc=0)
+                # ax.set_title('Best safety model and real %s \n trained on run 1, tested on run %s , config = %s \n rmse = %s'%(ytopic,idy,config,round(mean_squared_error(y, y1),5)))
+                ax.set_ylim(0,1.2)
+                # ax.set_xlim(0,15)
+                ax.set_ylabel('QA')
+                ax.set_xlabel("Time [s]")
+                ax.set_title("Model (%s) test on unseen data \n for config: %s"%(ytopic,config))
+                plt.tight_layout()
 
-            # fig.savefig(dir_figs + 'model_%s_test_config_%s'%(ytopic,config) + '.png')
+                # fig.savefig(dir_figs + 'model_%s_test_config_%s'%(ytopic,config) + '.png')
             idm+=1
 
 plt.show()
