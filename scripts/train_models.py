@@ -26,8 +26,9 @@ dir_models = path + '/models/'
 dir_results = path + '/results/'
 
 # Experiment name and configs
-exp = 'exp14'
-configs = ['teb_v0_a0_b0','dwa_v0_a0_b0','teb_v1_a0_b0','dwa_v1_a0_b0']
+exp = 't1'
+# configs = ['teb_v0_a0_b0','dwa_v0_a0_b0','teb_v1_a0_b0','dwa_v1_a0_b0']
+configs = ["dwa_v0_a0_b0", "dwa_v0_a1_b0", "dwa_v0_a1_b1", "dwa_v0_a0_b1", "dwa_v1_a0_b0", "dwa_v1_a1_b0", "dwa_v1_a1_b1", "dwa_v1_a0_b1", "teb_v0_a0_b0", "teb_v0_a1_b0", "teb_v0_a1_b1", "teb_v0_a0_b1", "teb_v1_a0_b0", "teb_v1_a1_b0", "teb_v1_a1_b1", "teb_v1_a0_b1"]
 
 # Topics
 d_topics = []
@@ -43,23 +44,24 @@ polies = [5]
 samplesize = 100
 rolling = 1
 
-# Experiment start and end
-start_ms = 8000
-end_ms = 1000
 
 # print('Load files variable with files to include')
 # pkl_filename = dir_bags + "files_incl_%s"%(exp)
 # with open(pkl_filename, 'rb') as file:
 #     files = pickle.load(file)
 
+r2scores = dict()
 colors = ['tab:blue','tab:orange']
 for ytopic in ytopics:
+    r2scores[ytopic] = dict()
+    # r2scores_std[ytopic] = dict()
     # Import Bag files into pandas
     X, y, groups = generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,samplesize,rolling)
 
     # Train loop
     lr = LinearRegression(normalize=True)
     for config in configs:
+        r2scores[ytopic] = []
         gkf = GroupKFold(n_splits=int(groups[config][-1])+1)
 
         idm = 0   
@@ -114,23 +116,32 @@ for ytopic in ytopics:
                 print("explained variance score = %s"%explained_variance_score(yr,y1))
                 print("r2 score                 = %s"%r2_score(yr,y1))
 
+                r2scores[ytopic].append(r2_score(yr,y1))
+
                 # print(len(yr))
                 t = np.linspace(0,(len(yr)-1)/10,len(yr))
                 # print(t[2]-t[1])
                 # print(t)
-                fig, ax = plt.subplots()
-                ax.plot(t, y1, label='Model', color=colors[1])#, score = %s'%(round(m1.score(df[idy][xtopics].values,df[idy][ytopic].values),2)))
-                ax.plot(t, yr, label='real', linestyle='--', color=colors[0])
-                ax.legend(loc=0)
-                # ax.set_title('Best safety model and real %s \n trained on run 1, tested on run %s , config = %s \n rmse = %s'%(ytopic,idy,config,round(mean_squared_error(y, y1),5)))
-                ax.set_ylim(0,1.2)
-                # ax.set_xlim(0,15)
-                ax.set_ylabel('QA')
-                ax.set_xlabel("Time [s]")
-                ax.set_title("Model (%s) test on unseen data \n for config: %s"%(ytopic,config))
-                plt.tight_layout()
+                # fig, ax = plt.subplots()
+                # ax.plot(t, y1, label='Model', color=colors[1])#, score = %s'%(round(m1.score(df[idy][xtopics].values,df[idy][ytopic].values),2)))
+                # ax.plot(t, yr, label='real', linestyle='--', color=colors[0])
+                # ax.legend(loc=0)
+                # # ax.set_title('Best safety model and real %s \n trained on run 1, tested on run %s , config = %s \n rmse = %s'%(ytopic,idy,config,round(mean_squared_error(y, y1),5)))
+                # ax.set_ylim(0,1.2)
+                # # ax.set_xlim(0,15)
+                # ax.set_ylabel('QA')
+                # ax.set_xlabel("Time [s]")
+                # ax.set_title("Model (%s) test on unseen data \n for config: %s"%(ytopic,config))
+                # plt.tight_layout()
 
-                fig.savefig(dir_figs + 'model_%s_test_config_%s'%(ytopic,config) + '.png')
+                # fig.savefig(dir_figs + 'model_%s_test_config_%s'%(ytopic,config) + '.png')
             idm+=1
+
+    # fig, ax = plt.subplots()
+    # ax.bar(configs, r2scores[ytopic])#, score = %s'%(round(m1.score(df[idy][xtopics].values,df[idy][ytopic].values),2)))
+    # ax.set_title('r2scores of the %s model for all configurations'%(ytopic))
+    # ax.set_ylabel('r2scores')
+    # ax.set_ylim(0.85,1.0)
+    # plt.xticks(rotation=90)
 
 plt.show()

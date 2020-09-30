@@ -27,9 +27,9 @@ dir_models = path + '/models/'
 dir_results = path + '/results/'
 
 # Experiment name and configs
-exp = 'val3'
-configs = ['dwa_v0_a0_b0','teb_v0_a0_b0','dwa_v1_a0_b0','teb_v1_a0_b0']
-config_data = ['teb_v1_a0_b0']
+exp = 't1'
+configs = ['dwa_v1_a1_b1','teb_v1_a1_b0','dwa_v1_a1_b0','teb_v1_a0_b1']
+config_data = ['teb_v0_a0_b0']
 
 d_topics = []
 
@@ -44,13 +44,13 @@ rolling = 1
 os.chdir(dir_bags)
 files = dict()
 for config in configs:
-    files[config] = sorted(glob.glob("*%s_c%s*.bag"%(exp,config)))
-print(files)
+    files[config] = sorted(glob.glob("*%s_c%s_w4_C4_r1*.bag"%(exp,config)))
+# print(files)
 
 colors = ['tab:blue','tab:orange']
 for ytopic in ytopics:
     # Import Bag files into pandas
-    X, y, groups = generate_dataset_all(config_data,xtopics,ytopic,d_topics,exp,dir_bags,samplesize,rolling)
+    X, y, groups = generate_dataset_all_selectedfiles(files,configs,xtopics,ytopic,d_topics,exp,dir_bags,samplesize,rolling)
     pf = PolynomialFeatures(degree=5)
     Xp = pf.fit_transform(X[config])
 

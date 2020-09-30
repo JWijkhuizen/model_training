@@ -27,7 +27,7 @@ def import_bag(file, samplesize, rolling, bag_topics=None, print_head=False):
     # print(df['start_end'].dropna())
     try:
         start = df.loc[df['start_end'] == "start"].index[0].total_seconds()
-        end = df.loc[df['start_end'] == "end"].index[0].total_seconds()
+        end = df.index[-1].total_seconds() - df.loc[df['start_end'] == "end"].index[0].total_seconds()
     except:
         start = df.index[0].total_seconds()
         end = df.index[1].total_seconds()
@@ -61,12 +61,12 @@ def generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,samplesize
         files[config] = sorted(glob.glob("*%s_c%s*.bag"%(exp,config)))
         # print(files[config])
         for idx in range(len(files[config])):
-            df[config][idx],start_ms,end_ms = import_bag(files[config][idx],samplesize,rolling)
+            df[config][idx],start,end = import_bag(files[config][idx],samplesize,rolling)
             df[config][idx] = add_derivs(df[config][idx],d_topics)
 
             # Start and end time:
-            df[config][idx].drop(df[config][idx].head(int(start_ms/samplesize)).index,inplace=True)
-            df[config][idx].drop(df[config][idx].tail(int(end_ms/samplesize)).index,inplace=True) # drop last n rows
+            df[config][idx].drop(df[config][idx].head(int((start*1000)/samplesize)).index,inplace=True)
+            df[config][idx].drop(df[config][idx].tail(int((end*1000)/samplesize)).index,inplace=True) # drop last n rows
         # n = len(files[config])
         # print(df[config][0].head())
         # All the data in one set
@@ -83,7 +83,7 @@ def generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,samplesize
                 groups[config] = np.concatenate((groups[config], np.full(len(df[config][idx][ytopic].values),n_group)))
     return X, y, groups
 
-def generate_dataset_all_selectedfiles(files,configs,xtopics,ytopic,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling):
+def generate_dataset_all_selectedfiles(files,configs,xtopics,ytopic,d_topics,exp,dir_bags,samplesize,rolling):
     os.chdir(dir_bags)
     df = dict()
     X = dict()
@@ -93,12 +93,12 @@ def generate_dataset_all_selectedfiles(files,configs,xtopics,ytopic,d_topics,exp
     for config in configs:
         df[config] = dict()
         for idx in range(len(files[config])):
-            df[config][idx] = import_bag(files[config][idx],samplesize,rolling)
+            df[config][idx],start,end = import_bag(files[config][idx],samplesize,rolling)
             df[config][idx] = add_derivs(df[config][idx],d_topics)
 
             # Start and end time:
-            df[config][idx].drop(df[config][idx].head(int(start_ms/samplesize)).index,inplace=True)
-            df[config][idx].drop(df[config][idx].tail(int(end_ms/samplesize)).index,inplace=True) # drop last n rows
+            df[config][idx].drop(df[config][idx].head(int((start*1000)/samplesize)).index,inplace=True)
+            df[config][idx].drop(df[config][idx].tail(int((end*1000)/samplesize)).index,inplace=True) # drop last n rows
         # n = len(files[config])
         # check_shittyness(df,xtopics,ytopic,configs,n,samplesize)
 
@@ -115,47 +115,6 @@ def generate_dataset_all_selectedfiles(files,configs,xtopics,ytopic,d_topics,exp
                 y[config] = np.concatenate((y[config], df[config][idx][ytopic].values))
                 groups[config] = np.concatenate((groups[config], np.full(len(df[config][idx][ytopic].values),n_group)))
     return X, y, groups
-
-def generate_dataset_shifted(configs,xtopics,ytopic,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling):
-    os.chdir(dir_bags)
-    files = dict()
-    df = dict()
-    X_shift = dict()
-    y_shift = dict()
-    groups_shift = dict()
-    lags = dict()
-    mean_lags = dict()
-    n_exp = dict()
-    for config in configs:
-        df[config] = dict()
-        files[config] = sorted(glob.glob("%s_c%s*.bag"%(exp,config)))
-        lags[config] = []
-        for idx in range(len(files[config])):
-            # Import bags
-            df[config][idx] = import_bag(files[config][idx],samplesize,rolling)
-            df[config][idx] = add_derivs(df[config][idx],d_topics)
-            # Start and end time:
-            df[config][idx].drop(df[config][idx].head(int(start_ms/samplesize)).index,inplace=True)
-            df[config][idx].drop(df[config][idx].tail(int(end_ms/samplesize)).index,inplace=True) # drop last n rows
-            # Lags
-            lags[config].append(determine_lags(df[config][idx],xtopics,ytopic,samplesize))
-        # Determine mean lags for shift
-        mean_lags[config] = np.array(lags[config]).mean(axis=0).astype(int)
-
-        # All the data in one set
-        for idx in range(len(files[config])):
-            df_shift = shift_lags(df[config][idx],xtopics,mean_lags[config])
-            n_group = files[config][idx][-5]    # Group number is the run number
-            if idx == 0:
-                # Shifted
-                X_shift[config] = df_shift[xtopics].values
-                y_shift[config] = df_shift[ytopic].values
-                groups_shift[config] = np.full(len(df_shift[ytopic].values),n_group)
-            else:
-                X_shift[config] = np.concatenate((X_shift[config], df_shift[xtopics].values))
-                y_shift[config] = np.concatenate((y_shift[config], df_shift[ytopic].values))
-                groups_shift[config] = np.concatenate((groups_shift[config], np.full(len(df_shift[ytopic].values),n_group)))
-    return X_shift, y_shift, groups_shift
 
 
 def generate_dataset(configs,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling):
@@ -175,7 +134,7 @@ def generate_dataset(configs,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,ro
             df[config][idx],start,end = import_bag(files[config][idx],samplesize,rolling)
             # print(end)
             # print(df[config][idx].index[-1].total_seconds())
-            end = df[config][idx].index[-1].total_seconds() - end
+            # end = df[config][idx].index[-1].total_seconds() - end
             # print(end)
             df[config][idx] = add_derivs(df[config][idx],d_topics)
 
