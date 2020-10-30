@@ -28,7 +28,7 @@ dir_results = path + '/results/'
 
 # Experiment name and configs
 exp = 'val3'
-configs = ['teb_v1_a0_b0']
+configs = ['teb_v0_a0_b0']
 # configs = ['teb_v0_a0_b0']
 
 d_topics = []
@@ -63,7 +63,6 @@ for ytopic in ytopics:
         with open(pkl_filename, 'rb') as file:
             model = pickle.load(file)
 
-        
 
         pf = PolynomialFeatures(degree=5)
         Xp = pf.fit_transform(X[config])
@@ -80,11 +79,11 @@ for ytopic in ytopics:
         print("explained variance score = %s"%explained_variance_score(yr,y1))
         print("r2 score                 = %s"%r2_score(yr,y1))
 
-        print(len(yr))
+        print(y1)
         t = np.linspace(0,(len(yr)-1)/100,len(yr))
-        print(t[2]-t[1])
-        print(t)
-        fig, ax = plt.subplots()
+        # print(t[2]-t[1])
+        # print(t)
+        fig, ax = plt.subplots(figsize=[12.8,4.8])
         ax.plot(t, y1, label='Model', color=colors[1])#, score = %s'%(round(m1.score(df[idy][xtopics].values,df[idy][ytopic].values),2)))
         ax.plot(t, yr, label='real', linestyle='--', color=colors[0])
         ax.legend(loc=0)

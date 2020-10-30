@@ -56,9 +56,11 @@ def generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,samplesize
     groups = dict()
     n_exp = dict()
     for config in configs:
+        print("Import datasets for %s"%config)
         df[config] = dict()
 
         files[config] = sorted(glob.glob("*%s_c%s*.bag"%(exp,config)))
+        # print(files[config])
         # print(files[config])
         for idx in range(len(files[config])):
             df[config][idx],start,end = import_bag(files[config][idx],samplesize,rolling)
@@ -68,12 +70,18 @@ def generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,samplesize
             df[config][idx].drop(df[config][idx].head(int((start*1000)/samplesize)).index,inplace=True)
             df[config][idx].drop(df[config][idx].tail(int((end*1000)/samplesize)).index,inplace=True) # drop last n rows
         # n = len(files[config])
+        # print(df[config][idx].columns)
         # print(df[config][0].head())
         # All the data in one set
         for idx in range(len(files[config])):
+            try:
+                test = df[config][idx][ytopic].values
+            except:
+                print('error with %s'%files[config][idx])
+                continue
             n_group = files[config][idx][-5]    # Group number is the run number
             # print(n_group)
-            if idx == 0:
+            if config not in X:
                 X[config] = df[config][idx][xtopics].values
                 y[config] = df[config][idx][ytopic].values
                 groups[config] = np.full(len(X[config]),n_group)

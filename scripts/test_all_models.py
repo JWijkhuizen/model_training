@@ -28,8 +28,8 @@ dir_results = path + '/results/'
 
 # Experiment name and configs
 exp = 't1'
-configs = ['dwa_v1_a1_b1','teb_v1_a1_b0','dwa_v1_a1_b0','teb_v1_a0_b1']
-config_data = ['teb_v0_a0_b0']
+configs = ['dwa_v2_a0_b0','dwa_v1_a0_b0','dwa_v2_a1_b0']
+config_data = 'dwa_v2_a0_b0'
 
 d_topics = []
 
@@ -44,7 +44,7 @@ rolling = 1
 os.chdir(dir_bags)
 files = dict()
 for config in configs:
-    files[config] = sorted(glob.glob("*%s_c%s_w4_C4_r1*.bag"%(exp,config)))
+    files[config] = sorted(glob.glob("*%s_c%s_w4_C4_r3*.bag"%(exp,config)))
 # print(files)
 
 colors = ['tab:blue','tab:orange']
@@ -52,7 +52,7 @@ for ytopic in ytopics:
     # Import Bag files into pandas
     X, y, groups = generate_dataset_all_selectedfiles(files,configs,xtopics,ytopic,d_topics,exp,dir_bags,samplesize,rolling)
     pf = PolynomialFeatures(degree=5)
-    Xp = pf.fit_transform(X[config])
+    Xp = pf.fit_transform(X[config_data])
 
     ym = dict()
     for config in configs:
@@ -64,23 +64,24 @@ for ytopic in ytopics:
 
         ym[config] = model.predict(Xp)
 
-    yr = y[config]
+    yr = y[config_data]
 
     t = np.linspace(0,(len(yr)-1)/10,len(yr))
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=[12.8,4.8])
     for config in configs:
-        if config not in config_data:
-            ax.plot(t, ym[config], label='Predicted %s'%config)#, color=colors[1])#, score = %s'%(round(m1.score(df[idy][xtopics].values,df[idy][ytopic].values),2)))
-    ax.plot(t, yr, label='Measured %s'%config_data[0], linestyle='--', color=colors[0])
-    ax.legend(loc=0)
+        # if config not in config_data:
+        ax.plot(t, ym[config], label='Predicted %s'%config)#, color=colors[1])#, score = %s'%(round(m1.score(df[idy][xtopics].values,df[idy][ytopic].values),2)))
+    ax.plot(t, yr, label='Measured %s'%config_data, linestyle='--', color=colors[0])
+    ax.legend()
     # ax.set_title('Best safety model and real %s \n trained on run 1, tested on run %s , config = %s \n rmse = %s'%(ytopic,idy,config,round(mean_squared_error(y, y1),5)))
-    ax.set_ylim(0,1.2)
-    ax.set_ylabel('Safety \n level')
-    ax.set_xlabel("Time [s]")
+    ax.set_ylim(0,1.1)
+    ax.set_xlim(4,32)
+    ax.set_ylabel('Safety level')
+    ax.set_xlabel("Time (s)")
     ax.set_title("Model (%s) predictions"%(ytopic))
     plt.tight_layout()
 
     os.chdir(dir_figs)
-    # fig.savefig(dir_figs + 'model_%s_test_all'%(ytopic) + '.png')
+    fig.savefig(dir_figs + 'model_%s_test_all'%(ytopic) + '.png')
 
 plt.show()

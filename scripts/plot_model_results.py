@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3.6
 
 # import rosbag
 import rospy
@@ -40,9 +40,9 @@ dir_results = path + '/results/'
 
 
 # Experiment name and configs
-exp = 'exp2'
+exp = 'Experiment6'
 # configs = ['dwa1','dwa2','teb1','teb2']
-configs = ['cdwa_v0_a0_b0']
+configs = ['dwa_v0_a0_b0']
 # configs = ['dwa1','dwa2']
 
 d_topics = ['density1_f','narrowness1']
@@ -55,16 +55,20 @@ ytopic = 'safety2'
 
 model = 'safety2_Poly6_cdwa1_4_best.pkl'
 
+colors = dict()
+colors['safety'] = 'tab:green'
+colors['performance'] = 'tab:blue'
+
 # Resamplesize and smoothing (rolling)
-samplesize = 10
-rolling = 100
+samplesize = 100
+rolling = 1
 
 # Experiment start and end
-start_ms = 10000
-end_ms = 1000
+# start_ms = 10000
+# end_ms = 1000
 
 # Import Bag files into pandas
-X, y, groups = generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,start_ms,end_ms,samplesize,rolling)
+X, y, groups = generate_dataset_all(configs,xtopics,ytopic,d_topics,exp,dir_bags,samplesize,rolling)
 
 # Print all the files with idx
 # for config in configs:
