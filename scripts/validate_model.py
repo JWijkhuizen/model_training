@@ -21,14 +21,14 @@ from functions_postprocess import *
 rospack = rospkg.RosPack()
 path = rospack.get_path('model_training')
 path2 = rospack.get_path('simulation_tests')
-dir_bags = path2 + '/bags/'
+dir_bags = path + '/bags/'
 dir_figs = path + '/figures/'
 dir_models = path + '/models/'
 dir_results = path + '/results/'
 
 # Experiment name and configs
-exp = 'val3'
-configs = ['teb_v0_a0_b0']
+exp = 'validation'
+configs = ['teb_v1_a0_b0']
 # configs = ['teb_v0_a0_b0']
 
 d_topics = []

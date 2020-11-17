@@ -29,7 +29,7 @@ dir_results = path + '/results/'
 exp = 't2'
 # configs = ['teb_v0_a0_b0','dwa_v0_a0_b0','teb_v1_a0_b0','dwa_v1_a0_b0']
 configs = ["dwa_v1_a0_b0", "dwa_v1_a1_b0", "dwa_v1_a0_b1", "dwa_v1_a1_b1", "dwa_v2_a0_b0", "dwa_v2_a1_b0", "dwa_v2_a0_b1", "dwa_v2_a1_b1", "teb_v1_a0_b0", "teb_v1_a1_b0", "teb_v1_a0_b1", "teb_v1_a1_b1", "teb_v2_a0_b0", "teb_v2_a1_b0", "teb_v2_a0_b1", "teb_v2_a1_b1"]
-# configs = ["dwa_v0_a0_b0", "teb_v0_a0_b0"]
+# configs = ["dwa_v1_a0_b0"]
 # Topics
 d_topics = []
 xtopics = ['obstacle_density21','narrowness1']
@@ -38,7 +38,7 @@ ytopics = ['safety']
 # print_output = True
 print_output = True
 # plot_model = True
-plot_model = True
+plot_model = False
 
 # Models
 # polies = [1,2,3,4,5,6]
@@ -48,7 +48,8 @@ polies = [5]
 samplesize = 100
 rolling = 1
 
-save_models = True
+save_models = False
+save_plots = True
 
 # print('Load files variable with files to include')
 # pkl_filename = dir_bags + "files_incl_%s"%(exp)
@@ -146,14 +147,21 @@ for ytopic in ytopics:
                     ax.set_title("Safety model for %s"%(config))
                     plt.tight_layout()
 
-                    # fig.savefig(dir_figs + 'model_%s_test_config_%s'%(ytopic,config) + '.png')
+                    if save_plots: fig.savefig(dir_figs + 'model_%s_test_config_%s'%(ytopic,config) + '.png')
             idm+=1
     ws.append(["","r2score","mse"])
     idy = 0
     for config in configs:
         ws.append([config, r2score_array[idy], mse_array[idy]])
         idy+=1
-
+    print("r2scores")
+    print("average  = %s"%(sum(r2score_array)/len(r2score_array)))
+    print("min      = %s"%(min(r2score_array)))
+    print("max      = %s"%(max(r2score_array)))
+    print("mse")
+    print("average  = %s"%(sum(mse_array)/len(mse_array)))
+    print("min      = %s"%(min(mse_array)))
+    print("max      = %s"%(max(mse_array)))
 
     # fig, ax = plt.subplots()
     # ax.bar(configs, r2scores[ytopic])#, score = %s'%(round(m1.score(df[idy][xtopics].values,df[idy][ytopic].values),2)))
